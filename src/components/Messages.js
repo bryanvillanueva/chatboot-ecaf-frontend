@@ -368,7 +368,7 @@ const Messages = ({ conversationId }) => {
   const imageInputRef = useRef(null);
   const documentInputRef = useRef(null);
   const theme = useTheme();
-  const ICON_COLOR = '#2B91FF';
+  const ICON_COLOR = '#ed403d';
   const [infoDrawerOpen, setInfoDrawerOpen] = useState(false);
   const [highlightedMessageId, setHighlightedMessageId] = useState(null);
   const messageRefs = useRef({}); // Para almacenar referencias a los mensajes
@@ -403,8 +403,8 @@ const Messages = ({ conversationId }) => {
     }, 100);
   };
   
-  // Extraer el nombre del cliente (primer sender que no sea "Sharky")
-  const clientName = messages.find(m => m.sender && m.sender !== 'Sharky')?.sender || conversationId;
+  // Extraer el nombre del cliente (primer sender que no sea "Ecaf")
+  const clientName = messages.find(m => m.sender && m.sender !== 'Ecaf')?.sender || conversationId;
 
   // Función para abrir imagen en modal
   const handleOpenImageModal = (imageSrc) => {
@@ -452,7 +452,7 @@ const Messages = ({ conversationId }) => {
           // Notificar si hay mensajes nuevos (solo de cliente)
           if (sortedMessages.length > previousMessagesCount) {
             const newMessages = sortedMessages.slice(0, sortedMessages.length - previousMessagesCount);
-            const newCustomerMessage = newMessages.find(m => m.sender && m.sender !== 'Sharky');
+            const newCustomerMessage = newMessages.find(m => m.sender && m.sender !== 'Ecaf');
             if (newCustomerMessage) {
               if (Notification.permission === 'granted') {
                 new Notification('New message received', {
@@ -542,7 +542,7 @@ const Messages = ({ conversationId }) => {
       setIsSending(true);
       
       try {
-        const clientPhone = messages.find(m => m.sender && m.sender !== 'Sharky')?.sender;
+        const clientPhone = messages.find(m => m.sender && m.sender !== 'Ecaf')?.sender;
         if (!clientPhone) {
           console.error('No client phone number found in messages.');
           setIsSending(false);
@@ -559,7 +559,7 @@ const Messages = ({ conversationId }) => {
           formData.append('to', clientPhone); // Número del destinatario
           formData.append('conversationId', conversationId); // ID de la conversación
           formData.append('caption', inputMessage); // Usar el mensaje como caption
-          formData.append('sender', 'Sharky'); // Remitente
+          formData.append('sender', 'Ecaf'); // Remitente
           
           // Enviar al endpoint de medios
           await axios.post(
@@ -590,7 +590,7 @@ const Messages = ({ conversationId }) => {
             to: clientPhone,
             conversationId,
             message: inputMessage,
-            sender: 'Sharky'
+            sender: 'Ecaf'
           };
 
           await axios.post(
@@ -705,7 +705,7 @@ const confirmDeleteMessage = () => {
     const file = event.target.files[0];
     if (!file) return;
 
-    const clientPhone = messages.find(m => m.sender && m.sender !== 'Sharky')?.sender;
+    const clientPhone = messages.find(m => m.sender && m.sender !== 'Ecaf')?.sender;
     if (!clientPhone) {
       console.error('No client phone number found');
       alert('No se encontró el número de teléfono del cliente');
@@ -723,7 +723,7 @@ const confirmDeleteMessage = () => {
       formData.append('to', clientPhone); // Número del destinatario
       formData.append('conversationId', conversationId); // ID de la conversación
       formData.append('caption', ''); // Caption opcional
-      formData.append('sender', 'Sharky'); // Remitente
+      formData.append('sender', 'Ecaf'); // Remitente
       
       // Enviar directamente al endpoint de medios
       const response = await axios.post(
@@ -798,7 +798,7 @@ const confirmDeleteMessage = () => {
       width: '100%',
       overflow: 'hidden',
       position: 'relative',
-      backgroundImage: `url('https://sharkagency.co/wallpaper-wp.jpg')`,
+      backgroundImage: `linear-gradient(rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0.5)), url('https://t3.ftcdn.net/jpg/02/61/84/04/360_F_261840401_xW7fvH5NPO77Ql49g6H3YeUL07TvRLEE.jpg')`,
       backgroundSize: 'auto',
       backgroundPosition: 'center',
       transition: 'padding-right 0.3s ease', // Añadir transición suave
@@ -868,7 +868,7 @@ const confirmDeleteMessage = () => {
   sx={{
     display: 'flex',
     flexDirection: 'column',
-    alignItems: msg.sender === 'Sharky' ? 'flex-end' : 'flex-start',
+    alignItems: msg.sender === 'Ecaf' ? 'flex-end' : 'flex-start',
     px: 2,
     py: 1,
     ...(highlightedMessageId === msg.message_id && {
@@ -894,8 +894,8 @@ const confirmDeleteMessage = () => {
   className="message-actions"
   sx={{
     position: 'absolute',
-    right: msg.sender === 'Sharky' ? 'auto' : '-30px',
-    left: msg.sender === 'Sharky' ? '-30px' : 'auto',
+    right: msg.sender === 'Ecaf' ? 'auto' : '-30px',
+    left: msg.sender === 'Ecaf' ? '-30px' : 'auto',
     top: '50%',
     transform: 'translateY(-50%)',
     display: 'flex',
@@ -920,7 +920,7 @@ const confirmDeleteMessage = () => {
     <ReplyIcon fontSize="small" />
   </IconButton>
   
-  {/* Delete button - para todos los mensajes, no solo Sharky */}
+  {/* Delete button - para todos los mensajes, no solo Ecaf */}
   <IconButton
   size="small"
   onClick={() => handleDeleteMessageRequest(msg.message_id)}
@@ -939,8 +939,8 @@ const confirmDeleteMessage = () => {
     {/* Message bubble */}
     <Box
       sx={{
-        backgroundColor: msg.sender === 'Sharky' ? '#ed403d' : '#ffffff',
-        color: msg.sender === 'Sharky' ? '#fff' : 'inherit',
+        backgroundColor: msg.sender === 'Ecaf' ? '#ed403d' : '#ffffff',
+        color: msg.sender === 'Ecaf' ? '#fff' : 'inherit',
         borderRadius: '25px',
         p: 2,
         wordBreak: 'break-word',

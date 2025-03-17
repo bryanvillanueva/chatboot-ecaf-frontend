@@ -126,7 +126,7 @@ const Chat = ({ onSelectConversation }) => {
         sx={{
           display: 'flex',
           width: '100%',
-          height: 'calc(100vh - 40px)', // Ajuste para no generar scroll
+          height: 'calc(100vh - 65px)', // Ajuste para no generar scroll
           overflow: 'hidden',
 
           paddingTop: '24px', 
@@ -219,7 +219,7 @@ const Chat = ({ onSelectConversation }) => {
                       <Badge
                         variant="dot"
                         color="primary"
-                        invisible={!conv.last_message_sender || conv.last_message_sender === 'Sharky'}
+                        invisible={!conv.last_message_sender || conv.last_message_sender === 'Ecaf'}
                         anchorOrigin={{
                           vertical: 'bottom',
                           horizontal: 'right',
@@ -240,7 +240,7 @@ const Chat = ({ onSelectConversation }) => {
                             overflow: 'hidden',
                             textOverflow: 'ellipsis',
                             maxWidth: '160px',
-                            color: conv.last_message_sender && conv.last_message_sender !== 'Sharky' ? '#003491' : 'inherit',
+                            color: conv.last_message_sender && conv.last_message_sender !== 'Ecaf' ? '#003491' : 'inherit',
                           }}
                         >
                           {getLastMessagePreview(conv)}

@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 // URL base de tu backend en Railway
-const BASE_URL = 'https://chatboot-webhook-production.up.railway.app/api';
+const BASE_URL = 'https://webhook-ecaf-production.up.railway.app/api';
 
 // Obtiene la lista de conversaciones
 export const fetchConversations = async () => {
