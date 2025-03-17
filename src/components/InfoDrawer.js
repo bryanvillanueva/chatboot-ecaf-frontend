@@ -37,7 +37,7 @@ const ImageThumbnail = ({ mediaId, onClick }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   
-  const imageUrl = `https://chatboot-webhook-production.up.railway.app/api/download-image/${mediaId}`;
+  const imageUrl = `https://webhook-ecaf-production.up.railway.app/api/download-image/${mediaId}`;
   
   return (
     <Box 
@@ -152,10 +152,10 @@ const InfoDrawer = ({ open, onClose, conversationId, onMessageClick }) => {
     
     try {
       // Obtener detalles de la conversación (incluye client_name)
-      const conversationResponse = await axios.get(`https://chatboot-webhook-production.up.railway.app/api/conversation-detail/${conversationId}`);
+      const conversationResponse = await axios.get(`https://webhook-ecaf-production.up.railway.app/api/conversation-detail/${conversationId}`);
       
       // Obtener mensajes para extraer el número de teléfono
-      const messagesResponse = await axios.get(`https://chatboot-webhook-production.up.railway.app/api/messages/${conversationId}`);
+      const messagesResponse = await axios.get(`https://webhook-ecaf-production.up.railway.app/api/messages/${conversationId}`);
       
       // Extraer el número de teléfono (sender que no sea "Sharky")
       const clientPhone = messagesResponse.data.find(m => m.sender && m.sender !== 'Sharky')?.sender;
@@ -176,7 +176,7 @@ const InfoDrawer = ({ open, onClose, conversationId, onMessageClick }) => {
 
   const fetchMessages = async () => {
     try {
-      const response = await axios.get(`https://chatboot-webhook-production.up.railway.app/api/messages/${conversationId}`);
+      const response = await axios.get(`https://webhook-ecaf-production.up.railway.app/api/messages/${conversationId}`);
       setMessages(response.data);
     } catch (error) {
       console.error('Error al obtener mensajes:', error);

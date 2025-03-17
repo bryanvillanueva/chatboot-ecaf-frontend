@@ -22,7 +22,7 @@ const AppointmentForm = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const response = await axios.post('https://chatboot-webhook-production.up.railway.app/appointments', formData);
+      const response = await axios.post('https://webhook-ecaf-production.up.railway.app/appointments', formData);
       if (response.data && response.data.message) {
         alert(response.data.message);
       } else {

@@ -154,7 +154,7 @@ const Chat = ({ onSelectConversation }) => {
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
-                    <SearchIcon sx={{ color: '#2B91FF !important' }} />
+                    <SearchIcon sx={{ color: '#ed403d !important' }} />
                   </InputAdornment>
                 ),
                 endAdornment: searchQuery && (
@@ -173,13 +173,13 @@ const Chat = ({ onSelectConversation }) => {
                   borderRadius: 2,
                   bgcolor: '#f0f2f5',
                   '& fieldset': {
-                    borderColor: '#2B91FF',
+                    borderColor: '#ed403d',
                   },
                   '&:hover fieldset': {
-                    borderColor: '#2B91FF',
+                    borderColor: '#9f0705',
                   },
                   '&.Mui-focused fieldset': {
-                    borderColor: '#2B91FF',
+                    borderColor: '#9f0705',
                   }
                 }
               }}

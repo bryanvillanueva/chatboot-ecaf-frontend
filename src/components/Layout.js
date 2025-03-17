@@ -23,7 +23,7 @@ const Layout = ({ children }) => {
           [`& .MuiDrawer-paper`]: { 
             width: drawerWidth, 
             boxSizing: 'border-box', 
-            background: "#003491", 
+            background: "#ed403d", 
             color: '#fff' 
           },
         }}
@@ -38,11 +38,12 @@ const Layout = ({ children }) => {
           }}
         >
           <Typography variant="h6" noWrap>
-            Shark Agency
+            ECAF
           </Typography>
         </Toolbar>
 
         <List>
+        <Divider sx={{ bgcolor: "rgba(255,255,255,0.3)", mx: 2, my: 1 }} />
           <ListItem button component={Link} to="/" selected={location.pathname === '/'}>
             <ListItemIcon>
               <DashboardIcon sx={{ color: '#fff' }} />

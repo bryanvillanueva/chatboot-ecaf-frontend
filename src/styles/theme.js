@@ -3,16 +3,16 @@ import { createTheme } from '@mui/material/styles';
 const theme = createTheme({
   palette: {
     primary: {
-      main: '#2B91FF', // Azul principal
+      main: '#ed403d', // Rojo principal
     },
     secondary: {
-      main: '#003491', // Azul oscuro
+      main: '#ed403d', // Rojo oscuro
     },
     light: {
     main: '#ffffff', // Blanco
     },
     error: {
-      main: '#2B91FF', // Azul claro
+      main: '#9f0705', // Azul claro
     },
   },
 });

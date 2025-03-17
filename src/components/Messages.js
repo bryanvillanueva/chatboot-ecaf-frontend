@@ -53,7 +53,7 @@ const MessageImage = ({ mediaId, onClick }) => {
   const [retryCount, setRetryCount] = useState(0);
   
   // Generamos la URL directa al endpoint proxy
-  const imageProxyUrl = `https://chatboot-webhook-production.up.railway.app/api/download-image/${mediaId}`;
+  const imageProxyUrl = `https://webhook-ecaf-production.up.railway.app/api/download-image/${mediaId}`;
   
   // Usamos el mediaId como clave para refrescar la imagen
   const imageSrc = `${imageProxyUrl}?v=${retryCount}`;
@@ -138,7 +138,7 @@ const MessageDocument = ({ mediaId, fileName }) => {
   const [retryCount, setRetryCount] = useState(0);
   
   // URL del documento a través del proxy
-  const documentProxyUrl = `https://chatboot-webhook-production.up.railway.app/api/download-document/${mediaId}`;
+  const documentProxyUrl = `https://webhook-ecaf-production.up.railway.app/api/download-document/${mediaId}`;
   
   // Formato del nombre de archivo para mostrar
   const displayFileName = fileName || 'Documento adjunto';
@@ -415,7 +415,7 @@ const Messages = ({ conversationId }) => {
   // Obtener detalles de la conversación (autoresponse)
   useEffect(() => {
     if (conversationId) {
-      axios.get(`https://chatboot-webhook-production.up.railway.app/api/conversation-detail/${conversationId}`)
+      axios.get(`https://webhook-ecaf-production.up.railway.app/api/conversation-detail/${conversationId}`)
         .then((res) => {
           const conv = res.data;
           console.log("Valor de autoresponse:", conv.autoresponse);
@@ -432,7 +432,7 @@ const Messages = ({ conversationId }) => {
     const newValue = e.target.checked;
     setAutoresponse(newValue);
     try {
-      const response = await axios.put(`https://chatboot-webhook-production.up.railway.app/api/conversations/${conversationId}/autoresponse`, { autoresponse: newValue });
+      const response = await axios.put(`https://webhook-ecaf-production.up.railway.app/api/conversations/${conversationId}/autoresponse`, { autoresponse: newValue });
       console.log('Autoresponse updated successfully:', response.data);
     } catch (error) {
       console.error('Error updating autoresponse:', error.response ? error.response.data : error.message);
@@ -563,7 +563,7 @@ const Messages = ({ conversationId }) => {
           
           // Enviar al endpoint de medios
           await axios.post(
-            'https://chatboot-webhook-production.up.railway.app/api/send-media',
+            'https://webhook-ecaf-production.up.railway.app/api/send-media',
             formData,
             { 
               headers: { 
@@ -594,7 +594,7 @@ const Messages = ({ conversationId }) => {
           };
 
           await axios.post(
-            'https://chatboot-webhook-production.up.railway.app/send-manual-message',
+            'https://webhook-ecaf-production.up.railway.app/send-manual-message',
             payload
           );
         }
@@ -673,7 +673,7 @@ const confirmDeleteMessage = () => {
   
   console.log('Enviando solicitud de eliminación. ID:', messageToDelete);
   
-  axios.delete(`https://chatboot-webhook-production.up.railway.app/api/delete-message/${messageToDelete}`)
+  axios.delete(`https://webhook-ecaf-production.up.railway.app/api/delete-message/${messageToDelete}`)
     .then(response => {
       console.log('Datos recibidos:', response.data);
       // Actualizar UI
@@ -727,7 +727,7 @@ const confirmDeleteMessage = () => {
       
       // Enviar directamente al endpoint de medios
       const response = await axios.post(
-        'https://chatboot-webhook-production.up.railway.app/api/send-media',
+        'https://webhook-ecaf-production.up.railway.app/api/send-media',
         formData,
         { 
           headers: { 
@@ -767,14 +767,14 @@ const confirmDeleteMessage = () => {
       case 'audio':
         return (
           <CustomAudioPlayer 
-            src={`https://chatboot-webhook-production.up.railway.app/api/download-media?url=${encodeURIComponent(msg.media_url)}&mediaId=${encodeURIComponent(msg.media_id)}`} 
+            src={`https://webhook-ecaf-production.up.railway.app/api/download-media?url=${encodeURIComponent(msg.media_url)}&mediaId=${encodeURIComponent(msg.media_id)}`} 
           />
         );
       case 'image':
         return (
           <MessageImage 
             mediaId={msg.media_id} 
-            onClick={() => handleOpenImageModal(`https://chatboot-webhook-production.up.railway.app/api/download-image/${msg.media_id}`)}
+            onClick={() => handleOpenImageModal(`https://webhook-ecaf-production.up.railway.app/api/download-image/${msg.media_id}`)}
           />
         );
       case 'document':
@@ -939,7 +939,7 @@ const confirmDeleteMessage = () => {
     {/* Message bubble */}
     <Box
       sx={{
-        backgroundColor: msg.sender === 'Sharky' ? '#003491' : '#ffffff',
+        backgroundColor: msg.sender === 'Sharky' ? '#ed403d' : '#ffffff',
         color: msg.sender === 'Sharky' ? '#fff' : 'inherit',
         borderRadius: '25px',
         p: 2,

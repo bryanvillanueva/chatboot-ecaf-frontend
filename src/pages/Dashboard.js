@@ -25,7 +25,7 @@ const Dashboard = ({ pageTitle }) => {
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
-        const response = await axios.get('https://chatboot-webhook-production.up.railway.app/api/dashboard-info');
+        const response = await axios.get('https://webhook-ecaf-production.up.railway.app/api/dashboard-info');
         const data = response.data;
         setDashboardData(data);
         localStorage.setItem(CACHE_KEY, JSON.stringify({ timestamp: Date.now(), data }));
@@ -73,8 +73,8 @@ const Dashboard = ({ pageTitle }) => {
       {
         label: 'Mensajes recibidos',
         data: timeline ? timeline.map(item => item.count) : [],
-        borderColor: 'rgba(43, 145, 255, 1)',
-        backgroundColor: 'rgba(43, 145, 255, 0.2)',
+        borderColor: '#ed403d',
+        backgroundColor: '#ed403dad',
         tension: 0.4,
         fill: true,
       },
@@ -85,9 +85,7 @@ const Dashboard = ({ pageTitle }) => {
     <Box>
       <Navbar pageTitle={pageTitle} />
       <Box p={3} sx={{ marginTop: '10px' }}>
-        <Typography variant="h4" color="primary" gutterBottom>
-          Dashboard
-        </Typography>
+
         <Grid container spacing={1} justifyContent="center">
           {stats.map((stat, index) => (
             <Grid item xs={12} sm={6} md={3} key={index}>
@@ -105,7 +103,7 @@ const Dashboard = ({ pageTitle }) => {
         <Box mt={1}>
           <Card elevation={3}>
             <CardContent>
-              <Line data={chartData} options={{ responsive: true, plugins: { legend: { position: 'top' }, title: { display: true, text: 'Timeline global de mensajes recibidos' } } }} />
+              <Line data={chartData}  height={100} options={{ responsive: true, plugins: { legend: { position: 'top' }, title: { display: true, text: 'Timeline global de mensajes recibidos' } } }} />
             </CardContent>
           </Card>
         </Box>
