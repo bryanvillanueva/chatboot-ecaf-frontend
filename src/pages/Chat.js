@@ -11,7 +11,8 @@ import {
   Badge,
   TextField,
   InputAdornment,
-  IconButton
+  IconButton,
+  Paper
 } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 import { fetchConversations } from '../services/webhookService';
@@ -19,6 +20,7 @@ import Messages from '../components/Messages';
 import Navbar from '../components/Navbar';
 import SearchIcon from '@mui/icons-material/Search';
 import ClearIcon from '@mui/icons-material/Clear';
+import MessageIcon from '@mui/icons-material/Message';
 
 const Chat = ({ onSelectConversation }) => {
   const [conversations, setConversations] = useState([]);
@@ -128,23 +130,50 @@ const Chat = ({ onSelectConversation }) => {
           width: '100%',
           height: 'calc(100vh - 65px)', // Ajuste para no generar scroll
           overflow: 'hidden',
-
           paddingTop: '24px', 
         }}
       >
         {/* Sidebar de Chats */}
-        <Box
+        <Paper
+          elevation={3}
           sx={{
-            width: '250px',
+            width: '260px', // Reducido de 280px a 260px
             height: '100%',
-            bgcolor: 'white',
-            borderRight: '1px solid #ccc',
+            bgcolor: '#fff',
+            boxShadow: '0 0 10px rgba(0,0,0,0.1)',
+            borderRight: 'none',
             display: 'flex',
             flexDirection: 'column',
+            borderRadius: '8px',
+            mr: 2, // Margen derecho
+            overflow: 'hidden', // Ocultar overflow
           }}
         >
-          {/* Barra de búsqueda en lugar del título */}
-          <Box sx={{ p: 2, pb: 1 }}>
+          {/* Título del panel de chat */}
+          <Box 
+            sx={{ 
+              p: 1.5, // Reducido de p: 2, pb: 1.5
+              borderBottom: '1px solid rgba(0,0,0,0.08)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'flex-start',
+            }}
+          >
+            <MessageIcon sx={{ color: '#CE0A0A', mr: 1 }} />
+            <Typography 
+              variant="h6" 
+              sx={{ 
+                fontWeight: 500, 
+                color: '#333',
+                fontSize: '1.1rem'
+              }}
+            >
+              Conversaciones
+            </Typography>
+          </Box>
+          
+          {/* Barra de búsqueda */}
+          <Box sx={{ px: 1.5, py: 1 }}> {/* Reducido de p: 2, pb: 1 */}
             <TextField
               fullWidth
               size="small"
@@ -154,7 +183,7 @@ const Chat = ({ onSelectConversation }) => {
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
-                    <SearchIcon sx={{ color: '#ed403d !important' }} />
+                    <SearchIcon sx={{ color: '#CE0A0A' }} />
                   </InputAdornment>
                 ),
                 endAdornment: searchQuery && (
@@ -170,32 +199,37 @@ const Chat = ({ onSelectConversation }) => {
                   </InputAdornment>
                 ),
                 sx: {
-                  borderRadius: 2,
-                  bgcolor: '#f0f2f5',
+                  borderRadius: '8px',
+                  bgcolor: '#f5f5f5',
                   '& fieldset': {
-                    borderColor: '#ed403d',
+                    borderColor: 'rgba(206, 10, 10, 0.3)',
                   },
                   '&:hover fieldset': {
-                    borderColor: '#9f0705',
+                    borderColor: '#CE0A0A',
                   },
                   '&.Mui-focused fieldset': {
-                    borderColor: '#9f0705',
+                    borderColor: '#CE0A0A',
                   }
                 }
               }}
             />
           </Box>
           
+          {/* Lista de conversaciones */}
           <List
             sx={{
               flex: 1,
               overflowY: 'auto',
+              overflowX: 'hidden', // Añadido para evitar scroll horizontal
               '&::-webkit-scrollbar': {
                 width: '6px',
               },
               '&::-webkit-scrollbar-thumb': {
-                backgroundColor: '#888',
+                backgroundColor: 'rgba(206, 10, 10, 0.3)',
                 borderRadius: '3px',
+              },
+              '&::-webkit-scrollbar-track': {
+                backgroundColor: '#f0f0f0',
               },
             }}
           >
@@ -206,32 +240,57 @@ const Chat = ({ onSelectConversation }) => {
                     button
                     onClick={() => handleSelectConversation(conv.conversation_id, conv.client_name, conv.phone_number)}
                     sx={{
-                      backgroundColor: selectedConversationId === conv.conversation_id ? theme.palette.action.selected : 'inherit',
+                      backgroundColor: selectedConversationId === conv.conversation_id ? 'rgba(206, 10, 10, 0.1)' : 'inherit',
+                      borderLeft: selectedConversationId === conv.conversation_id ? '3px solid #CE0A0A' : '3px solid transparent',
                       '&:hover': {
-                        backgroundColor: theme.palette.action.hover,
+                        backgroundColor: 'rgba(206, 10, 10, 0.05)',
                       },
-                      transition: 'background 0.2s ease-in-out',
-                      padding: '10px 16px',
+                      transition: 'all 0.2s ease-in-out',
+                      padding: '8px 12px', // Reducido de padding: '10px 16px'
                       cursor: 'pointer',
+                      borderRadius: '0',
+                      my: 0.5,
+                      mx: 0.5, // Reducido de mx: 1
                     }}
                   >
                     <ListItemAvatar>
                       <Badge
                         variant="dot"
-                        color="primary"
+                        color="error"
                         invisible={!conv.last_message_sender || conv.last_message_sender === 'Ecaf'}
                         anchorOrigin={{
                           vertical: 'bottom',
                           horizontal: 'right',
                         }}
+                        sx={{
+                          '& .MuiBadge-badge': {
+                            backgroundColor: '#CE0A0A',
+                          }
+                        }}
                       >
-                        <Avatar sx={{ bgcolor: theme.palette.primary.light }}>
-                          {conv.client_name ? conv.client_name.charAt(0) : '?'}
+                        <Avatar 
+                          sx={{ 
+                            bgcolor: selectedConversationId === conv.conversation_id ? '#CE0A0A' : 'rgba(206, 10, 10, 0.2)',
+                            color: selectedConversationId === conv.conversation_id ? 'white' : '#CE0A0A',
+                            transition: 'all 0.2s ease-in-out',
+                          }}
+                        >
+                          {conv.client_name ? conv.client_name.charAt(0).toUpperCase() : '?'}
                         </Avatar>
                       </Badge>
                     </ListItemAvatar>
                     <ListItemText
-                      primary={conv.client_name || 'Sin nombre'}
+                      primary={
+                        <Typography 
+                          variant="subtitle2" 
+                          sx={{ 
+                            fontWeight: selectedConversationId === conv.conversation_id ? 600 : 500,
+                            color: '#333'
+                          }}
+                        >
+                          {conv.client_name || 'Sin nombre'}
+                        </Typography>
+                      }
                       secondary={
                         <Typography
                           variant="body2"
@@ -239,8 +298,10 @@ const Chat = ({ onSelectConversation }) => {
                             whiteSpace: 'nowrap',
                             overflow: 'hidden',
                             textOverflow: 'ellipsis',
-                            maxWidth: '160px',
-                            color: conv.last_message_sender && conv.last_message_sender !== 'Ecaf' ? '#003491' : 'inherit',
+                            maxWidth: '150px', // Reducido de maxWidth: '160px'
+                            color: conv.last_message_sender && conv.last_message_sender !== 'Ecaf' ? '#CE0A0A' : 'text.secondary',
+                            fontWeight: conv.last_message_sender && conv.last_message_sender !== 'Ecaf' ? 500 : 400,
+                            fontSize: '0.75rem',
                           }}
                         >
                           {getLastMessagePreview(conv)}
@@ -248,7 +309,7 @@ const Chat = ({ onSelectConversation }) => {
                       }
                     />
                   </ListItem>
-                  <Divider />
+                  <Divider sx={{ mx: 1.5, backgroundColor: 'rgba(0,0,0,0.05)' }} /> {/* Reducido de mx: 2 */}
                 </React.Fragment>
               ))
             ) : (
@@ -259,10 +320,11 @@ const Chat = ({ onSelectConversation }) => {
               </Box>
             )}
           </List>
-        </Box>
+        </Paper>
 
         {/* Contenedor del Chat */}
-        <Box
+        <Paper
+          elevation={3}
           sx={{
             flex: 1,
             height: '100%',
@@ -270,6 +332,7 @@ const Chat = ({ onSelectConversation }) => {
             flexDirection: 'column',
             overflow: 'hidden',
             bgcolor: 'white',
+            borderRadius: '8px',
           }}
         >
           {selectedConversationId ? (
@@ -278,17 +341,22 @@ const Chat = ({ onSelectConversation }) => {
             <Box
               sx={{
                 display: 'flex',
+                flexDirection: 'column',
                 alignItems: 'center',
                 justifyContent: 'center',
                 height: '100%',
               }}
             >
-              <Typography variant="h6" color="textSecondary">
+              <MessageIcon sx={{ fontSize: 60, color: 'rgba(206, 10, 10, 0.2)', mb: 2 }} />
+              <Typography variant="h6" color="textSecondary" sx={{ mb: 1 }}>
                 Selecciona un chat para ver los mensajes
+              </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', maxWidth: '400px' }}>
+                Haz clic en una conversación de la lista para ver y responder mensajes.
               </Typography>
             </Box>
           )}
-        </Box>
+        </Paper>
       </Box>
     </>
   );
