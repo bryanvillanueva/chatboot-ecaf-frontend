@@ -38,11 +38,14 @@ import DownloadIcon from '@mui/icons-material/Download';
 import AttachMoneyIcon from '@mui/icons-material/AttachMoney';
 import FilterListIcon from '@mui/icons-material/FilterList';
 import CreditCardIcon from '@mui/icons-material/CreditCard';
+import EmailIcon from '@mui/icons-material/Email';
+import InfoIcon from '@mui/icons-material/Info';
 import Navbar from '../components/Navbar';
 
 const ConsultarCertificados = ({ pageTitle }) => {
   // Estado para almacenar la lista de certificados
   const [certificados, setCertificados] = useState([]);
+  const [allCertificados, setAllCertificados] = useState([]); // Todos los certificados sin filtrar por usuario
   
   // Estado para el filtrado y la búsqueda
   const [filtroEstado, setFiltroEstado] = useState('todos');
@@ -51,9 +54,12 @@ const ConsultarCertificados = ({ pageTitle }) => {
   const [busqueda, setBusqueda] = useState('');
   const [certificadosFiltrados, setCertificadosFiltrados] = useState([]);
   
+  // Estado para almacenar datos del usuario
+  const [userData, setUserData] = useState(null);
+  
   // Estado para la paginación
   const [page, setPage] = useState(0);
-  const [rowsPerPage, setRowsPerPage] = useState(5);
+  const [rowsPerPage, setRowsPerPage] = useState(15);
   
   // Estado para el modal de pago
   const [openPagoDialog, setOpenPagoDialog] = useState(false);
@@ -73,6 +79,43 @@ const ConsultarCertificados = ({ pageTitle }) => {
     }).format(valor);
   };
 
+  // Cargar datos del usuario
+  useEffect(() => {
+    const storedUserData = localStorage.getItem('userData');
+    if (storedUserData) {
+      try {
+        const parsedUserData = JSON.parse(storedUserData);
+        setUserData(parsedUserData);
+      } catch (error) {
+        console.error('Error al analizar los datos del usuario:', error);
+      }
+    }
+  }, []);
+
+  // Verificar si el usuario es administrador o profesor
+  const isAdminOrTeacher = () => {
+    if (!userData) return false;
+    
+    // Verificar el rol principal
+    const roleLower = userData.role ? userData.role.toLowerCase() : '';
+    if (roleLower === 'administrador' || roleLower === 'admin' || 
+        roleLower === 'profesor' || roleLower === 'teacher') {
+      return true;
+    }
+    
+    // Verificar roles de Moodle
+    if (userData.moodleRoles && Array.isArray(userData.moodleRoles)) {
+      return userData.moodleRoles.some(role => {
+        const roleName = role.roleName.toLowerCase();
+        return roleName === 'admin' || roleName === 'administrator' || 
+               roleName === 'manager' || roleName === 'teacher' || 
+               roleName === 'editingteacher' || roleName === 'profesor';
+      });
+    }
+    
+    return false;
+  };
+
   // Obtener certificados de la API
   useEffect(() => {
     const fetchCertificados = async () => {
@@ -85,8 +128,20 @@ const ConsultarCertificados = ({ pageTitle }) => {
         }
         
         const data = await response.json();
-        setCertificados(data);
-        setCertificadosFiltrados(data);
+        setAllCertificados(data); // Guardar todos los certificados
+        
+        // Filtrar por email del usuario si no es admin/profesor
+        if (userData && userData.email && !isAdminOrTeacher()) {
+          console.log('Filtrando certificados por email:', userData.email);
+          const userCertificados = data.filter(cert => 
+            cert.correo && cert.correo.toLowerCase() === userData.email.toLowerCase()
+          );
+          setCertificados(userCertificados);
+          setCertificadosFiltrados(userCertificados);
+        } else {
+          setCertificados(data);
+          setCertificadosFiltrados(data);
+        }
       } catch (err) {
         console.error('Error al obtener certificados:', err);
         setError('No se pudieron cargar los certificados. Por favor, intente nuevamente.');
@@ -95,8 +150,10 @@ const ConsultarCertificados = ({ pageTitle }) => {
       }
     };
 
-    fetchCertificados();
-  }, []);
+    if (userData) { // Solo cargar certificados cuando tengamos datos del usuario
+      fetchCertificados();
+    }
+  }, [userData]);
 
   // Actualizar la lista filtrada cuando cambien los filtros o la búsqueda
   useEffect(() => {
@@ -126,6 +183,7 @@ const ConsultarCertificados = ({ pageTitle }) => {
         (cert.nombre && cert.nombre.toLowerCase().includes(busquedaLower)) ||
         (cert.apellido && cert.apellido.toLowerCase().includes(busquedaLower)) ||
         (cert.numero_identificacion && cert.numero_identificacion.toLowerCase().includes(busquedaLower)) ||
+        (cert.correo && cert.correo.toLowerCase().includes(busquedaLower)) ||
         (cert.id && cert.id.toString().includes(busquedaLower))
       );
     }
@@ -176,10 +234,13 @@ const ConsultarCertificados = ({ pageTitle }) => {
   const getPrecioCertificado = (tipoCertificado) => {
     switch (tipoCertificado) {
       case 'Certificado de Notas':
+      case 'Certificado de notas':
         return 10000;
       case 'Certificado de Asistencia':
+      case 'Certificado de asistencia':
         return 12000;
       case 'Certificado General':
+      case 'Certificado general':
         return 20000;
       default:
         return 10000;
@@ -205,17 +266,54 @@ const ConsultarCertificados = ({ pageTitle }) => {
       <Container maxWidth="xl">
         <Box p={3} sx={{ marginTop: '20px' }}>
           <Paper elevation={3} sx={{ p: 4, borderRadius: 2, boxShadow: '0 4px 20px rgba(0,0,0,0.05)' }}>
-            <Typography 
-              variant="h5" 
-              sx={{ 
-                color: '#CE0A0A', 
-                textAlign: 'center', 
-                fontWeight: 600,
-                mb: 4
-              }}
-            >
-              Consulta de Certificados
-            </Typography>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+              <Typography 
+                variant="h5" 
+                sx={{ 
+                  color: '#CE0A0A', 
+                  fontWeight: 600,
+                }}
+              >
+                Consulta de Certificados
+              </Typography>
+              
+              {/* Indicador de filtro por email para usuarios no admin */}
+              {userData && userData.email && !isAdminOrTeacher() && (
+                <Chip
+                  icon={<EmailIcon />}
+                  label={`Mostrando certificados para: ${userData.email}`}
+                  color="primary"
+                  variant="outlined"
+                  sx={{
+                    borderColor: '#CE0A0A',
+                    color: '#CE0A0A',
+                    '& .MuiChip-icon': {
+                      color: '#CE0A0A'
+                    }
+                  }}
+                />
+              )}
+            </Box>
+            
+            {/* Mensaje para admins que ven todos los certificados */}
+            {userData && isAdminOrTeacher() && (
+              <Alert 
+                severity="info" 
+                icon={<InfoIcon />}
+                sx={{ 
+                  mb: 3, 
+                  backgroundColor: alpha('#CE0A0A', 0.05),
+                  color: '#CE0A0A',
+                  '& .MuiAlert-icon': {
+                    color: '#CE0A0A'
+                  }
+                }}
+              >
+                <Typography variant="body2">
+                  Como administrador o profesor, puede ver todos los certificados en el sistema, independientemente del correo electrónico asociado.
+                </Typography>
+              </Alert>
+            )}
             
             <Divider sx={{ mb: 4 }} />
             
@@ -240,7 +338,6 @@ const ConsultarCertificados = ({ pageTitle }) => {
               </Grid>
               
               <Grid item xs={12} md={6}>
-
                 <Grid container spacing={2}>
                   <Grid item xs={12} md={4}>
                     <FormControl fullWidth variant="outlined" >
@@ -326,7 +423,9 @@ const ConsultarCertificados = ({ pageTitle }) => {
               </Box>
             ) : certificadosFiltrados.length === 0 ? (
               <Alert severity="info" sx={{ mb: 3 }}>
-                No se encontraron certificados que coincidan con su búsqueda.
+                {userData && !isAdminOrTeacher() 
+                  ? `No se encontraron certificados asociados a su correo electrónico (${userData.email}).`
+                  : 'No se encontraron certificados que coincidan con su búsqueda.'}
               </Alert>
             ) : (
               <>
@@ -338,6 +437,7 @@ const ConsultarCertificados = ({ pageTitle }) => {
                         <TableCell sx={{ fontWeight: 'bold' }}>Nombre Completo</TableCell>
                         <TableCell sx={{ fontWeight: 'bold' }}>Tipo de Identificación</TableCell>
                         <TableCell sx={{ fontWeight: 'bold' }}>Número de Identificación</TableCell>
+                        <TableCell sx={{ fontWeight: 'bold' }}>Email</TableCell>
                         <TableCell sx={{ fontWeight: 'bold' }}>Tipo de Certificado</TableCell>
                         <TableCell sx={{ fontWeight: 'bold' }}>Referencia</TableCell>
                         <TableCell sx={{ fontWeight: 'bold' }}>Fecha</TableCell>
@@ -354,6 +454,12 @@ const ConsultarCertificados = ({ pageTitle }) => {
                             <TableCell>{`${certificado.nombre} ${certificado.apellido}`}</TableCell>
                             <TableCell>{certificado.tipo_identificacion}</TableCell>
                             <TableCell>{certificado.numero_identificacion}</TableCell>
+                            <TableCell>
+                              <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                                <EmailIcon fontSize="small" sx={{ mr: 0.5, color: '#CE0A0A', opacity: 0.7 }} />
+                                {certificado.correo}
+                              </Box>
+                            </TableCell>
                             <TableCell>{certificado.tipo_certificado}</TableCell>
                             <TableCell>{`#${certificado.id}`}</TableCell>
                             <TableCell>
@@ -407,7 +513,7 @@ const ConsultarCertificados = ({ pageTitle }) => {
                 
                 {/* Paginación */}
                 <TablePagination
-                  rowsPerPageOptions={[5, 10, 25]}
+                  rowsPerPageOptions={[15, 30, 45]}
                   component="div"
                   count={certificadosFiltrados.length}
                   rowsPerPage={rowsPerPage}
@@ -468,6 +574,13 @@ const ConsultarCertificados = ({ pageTitle }) => {
                 </Typography>
                 <Typography variant="body1" gutterBottom>
                   {`${certificadoSeleccionado.nombre} ${certificadoSeleccionado.apellido}`}
+                </Typography>
+                
+                <Typography variant="subtitle2" color="textSecondary">
+                  Email:
+                </Typography>
+                <Typography variant="body1" gutterBottom>
+                  {certificadoSeleccionado.correo}
                 </Typography>
                 
                 <Typography variant="subtitle2" color="textSecondary">

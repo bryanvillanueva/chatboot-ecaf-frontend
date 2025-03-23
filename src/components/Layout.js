@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Box, CssBaseline, Drawer, List, ListItem, ListItemIcon, ListItemText, Toolbar, Typography, Divider, Collapse } from '@mui/material';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import ChatIcon from '@mui/icons-material/Chat';
@@ -7,18 +7,107 @@ import AddIcon from '@mui/icons-material/Add';
 import SearchIcon from '@mui/icons-material/Search';
 import ExpandLess from '@mui/icons-material/ExpandLess';
 import ExpandMore from '@mui/icons-material/ExpandMore';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 
 const drawerWidth = 250;
 
 const Layout = ({ children }) => {
   const location = useLocation();
+  const navigate = useNavigate();
+  const [userData, setUserData] = useState(null);
   const [certificadosOpen, setCertificadosOpen] = useState(
     location.pathname.includes('/certificados/generar') || location.pathname.includes('/certificados/consultar')
   );
 
+  // Cargar datos del usuario al montar el componente
+  useEffect(() => {
+    const storedUserData = localStorage.getItem('userData');
+    if (storedUserData) {
+      try {
+        const parsedUserData = JSON.parse(storedUserData);
+        setUserData(parsedUserData);
+      } catch (error) {
+        console.error('Error al analizar los datos del usuario:', error);
+      }
+    }
+  }, []);
+
+  // Efecto para verificar permisos cuando se carga userData
+  useEffect(() => {
+    if (userData) {
+      // Si el usuario es estudiante y está intentando acceder a rutas no permitidas
+      if (isStudent() && (location.pathname === '/' || location.pathname === '/chat')) {
+        // Redirigir a la página de certificados
+        navigate('/certificados/consultar', { replace: true });
+      }
+    }
+  }, [userData, location.pathname]);
+
   const handleCertificadosClick = () => {
     setCertificadosOpen(!certificadosOpen);
+  };
+
+  // Función para determinar si el usuario es estudiante
+  const isStudent = () => {
+    if (!userData) return false;
+    
+    // Verificar el rol principal
+    const roleLower = userData.role ? userData.role.toLowerCase() : '';
+    if (roleLower === 'estudiante' || roleLower === 'student' || roleLower === 'alumno') {
+      return true;
+    }
+    
+    // Verificar roles de Moodle
+    if (userData.moodleRoles && Array.isArray(userData.moodleRoles)) {
+      return userData.moodleRoles.some(role => {
+        const roleName = role.roleName.toLowerCase();
+        return roleName === 'student' || roleName === 'estudiante' || roleName === 'alumno';
+      }) && !isAdmin() && !isTeacher(); // Es estudiante solo si no es admin ni profesor
+    }
+    
+    return false;
+  };
+  
+  // Función para determinar si el usuario es administrador
+  const isAdmin = () => {
+    if (!userData) return false;
+    
+    // Verificar el rol principal
+    const roleLower = userData.role ? userData.role.toLowerCase() : '';
+    if (roleLower === 'administrador' || roleLower === 'admin' || roleLower === 'administrator' || roleLower === 'manager') {
+      return true;
+    }
+    
+    // Verificar roles de Moodle
+    if (userData.moodleRoles && Array.isArray(userData.moodleRoles)) {
+      return userData.moodleRoles.some(role => {
+        const roleName = role.roleName.toLowerCase();
+        return roleName === 'admin' || roleName === 'administrator' || roleName === 'manager';
+      });
+    }
+    
+    return false;
+  };
+  
+  // Función para determinar si el usuario es profesor
+  const isTeacher = () => {
+    if (!userData) return false;
+    
+    // Verificar el rol principal
+    const roleLower = userData.role ? userData.role.toLowerCase() : '';
+    if (roleLower === 'profesor' || roleLower === 'teacher' || roleLower === 'docente' || roleLower === 'instructor') {
+      return true;
+    }
+    
+    // Verificar roles de Moodle
+    if (userData.moodleRoles && Array.isArray(userData.moodleRoles)) {
+      return userData.moodleRoles.some(role => {
+        const roleName = role.roleName.toLowerCase();
+        return roleName === 'teacher' || roleName === 'profesor' || roleName === 'editingteacher' || roleName === 'instructor';
+      });
+    }
+    
+    return false;
   };
 
   // Definimos estilos específicos para items seleccionados y no seleccionados
@@ -47,6 +136,16 @@ const Layout = ({ children }) => {
     },
     transition: 'all 0.2s ease-in-out'
   });
+
+  // Determinar si el usuario puede ver la sección de certificados completa
+  const canAccessAllCertificates = () => {
+    return true; // Ahora todos los usuarios pueden acceder a todas las opciones de certificados
+  };
+
+  // Determinar los permisos para generar certificados (ahora todos pueden)
+  const canGenerateCertificates = () => {
+    return true; // Todos los usuarios, incluidos estudiantes, pueden generar certificados
+  };
 
   return (
     <Box 
@@ -91,59 +190,63 @@ const Layout = ({ children }) => {
         <Divider sx={{ mx: 2, backgroundColor: 'rgba(0,0,0,0.08)' }} />
 
         <List sx={{ mt: 2 }}>
-          {/* Dashboard */}
-          <Box sx={{ textDecoration: 'none' }} component={Link} to="/">
-            <ListItem 
-              button 
-              disableRipple
-              sx={getListItemStyle(location.pathname === '/')}
-            >
-              <ListItemIcon>
-                <DashboardIcon sx={{ 
-                  color: location.pathname === '/' ? '#fff' : '#CE0A0A',
-                  transition: 'all 0.2s ease-in-out'
-                }} />
-              </ListItemIcon>
-              <ListItemText 
-                primary="Dashboard" 
-                primaryTypographyProps={{
-                  sx: { 
-                    color: location.pathname === '/' ? '#fff' : '#333',
-                    fontWeight: location.pathname === '/' ? 500 : 400,
+          {/* Dashboard - Solo para administradores y profesores */}
+          {(!isStudent() || isAdmin() || isTeacher()) && (
+            <Box sx={{ textDecoration: 'none' }} component={Link} to="/">
+              <ListItem 
+                button 
+                disableRipple
+                sx={getListItemStyle(location.pathname === '/')}
+              >
+                <ListItemIcon>
+                  <DashboardIcon sx={{ 
+                    color: location.pathname === '/' ? '#fff' : '#CE0A0A',
                     transition: 'all 0.2s ease-in-out'
-                  }
-                }}
-              />
-            </ListItem>
-          </Box>
+                  }} />
+                </ListItemIcon>
+                <ListItemText 
+                  primary="Dashboard" 
+                  primaryTypographyProps={{
+                    sx: { 
+                      color: location.pathname === '/' ? '#fff' : '#333',
+                      fontWeight: location.pathname === '/' ? 500 : 400,
+                      transition: 'all 0.2s ease-in-out'
+                    }
+                  }}
+                />
+              </ListItem>
+            </Box>
+          )}
           
-          {/* Chat */}
-          <Box sx={{ textDecoration: 'none' }} component={Link} to="/chat">
-            <ListItem 
-              button 
-              disableRipple
-              sx={getListItemStyle(location.pathname === '/chat')}
-            >
-              <ListItemIcon>
-                <ChatIcon sx={{ 
-                  color: location.pathname === '/chat' ? '#fff' : '#CE0A0A',
-                  transition: 'all 0.2s ease-in-out'
-                }} />
-              </ListItemIcon>
-              <ListItemText 
-                primary="Chat" 
-                primaryTypographyProps={{
-                  sx: { 
-                    color: location.pathname === '/chat' ? '#fff' : '#333',
-                    fontWeight: location.pathname === '/chat' ? 500 : 400,
+          {/* Chat - Solo para administradores y profesores */}
+          {(!isStudent() || isAdmin() || isTeacher()) && (
+            <Box sx={{ textDecoration: 'none' }} component={Link} to="/chat">
+              <ListItem 
+                button 
+                disableRipple
+                sx={getListItemStyle(location.pathname === '/chat')}
+              >
+                <ListItemIcon>
+                  <ChatIcon sx={{ 
+                    color: location.pathname === '/chat' ? '#fff' : '#CE0A0A',
                     transition: 'all 0.2s ease-in-out'
-                  }
-                }}
-              />
-            </ListItem>
-          </Box>
+                  }} />
+                </ListItemIcon>
+                <ListItemText 
+                  primary="Chat" 
+                  primaryTypographyProps={{
+                    sx: { 
+                      color: location.pathname === '/chat' ? '#fff' : '#333',
+                      fontWeight: location.pathname === '/chat' ? 500 : 400,
+                      transition: 'all 0.2s ease-in-out'
+                    }
+                  }}
+                />
+              </ListItem>
+            </Box>
+          )}
           
-          {/* Certificados con submenú */}
+          {/* Certificados con submenú - Accesible para todos */}
           <ListItem 
             button 
             onClick={handleCertificadosClick}
@@ -190,6 +293,7 @@ const Layout = ({ children }) => {
                 }
               }}
             />
+            {/* Mostrar el expandir/colapsar para todos los usuarios */}
             {certificadosOpen ? 
               <ExpandLess sx={{ 
                 color: (location.pathname.includes('/certificados/generar') || location.pathname.includes('/certificados/consultar')) 
@@ -209,7 +313,7 @@ const Layout = ({ children }) => {
           {/* Submenú de Certificados */}
           <Collapse in={certificadosOpen} timeout="auto" unmountOnExit>
             <List component="div" disablePadding>
-              {/* Generar Certificados */}
+              {/* Generar Certificados - Ahora accesible para todos, incluidos estudiantes */}
               <Box sx={{ textDecoration: 'none' }} component={Link} to="/certificados/generar">
                 <ListItem 
                   button 
@@ -237,7 +341,7 @@ const Layout = ({ children }) => {
                 </ListItem>
               </Box>
               
-              {/* Consultar Certificados */}
+              {/* Consultar Certificados - Accesible para todos */}
               <Box sx={{ textDecoration: 'none' }} component={Link} to="/certificados/consultar">
                 <ListItem 
                   button 
