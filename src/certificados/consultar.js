@@ -29,47 +29,71 @@ import {
   Divider,
   Alert,
   Tooltip,
-  CircularProgress
+  CircularProgress,
+  Snackbar
 } from '@mui/material';
 import { alpha } from '@mui/material/styles';
 import SearchIcon from '@mui/icons-material/Search';
 import PaymentIcon from '@mui/icons-material/Payment';
 import DownloadIcon from '@mui/icons-material/Download';
+import CloseIcon from '@mui/icons-material/Close';
 import AttachMoneyIcon from '@mui/icons-material/AttachMoney';
-import FilterListIcon from '@mui/icons-material/FilterList';
 import CreditCardIcon from '@mui/icons-material/CreditCard';
 import EmailIcon from '@mui/icons-material/Email';
 import InfoIcon from '@mui/icons-material/Info';
+import VisibilityIcon from '@mui/icons-material/Visibility';
+import PrintIcon from '@mui/icons-material/Print';
 import Navbar from '../components/Navbar';
+import certificateService from '../services/certificateService';
 
 const ConsultarCertificados = ({ pageTitle }) => {
-  // Estado para almacenar la lista de certificados
+  // Estados
   const [certificados, setCertificados] = useState([]);
-  const [allCertificados, setAllCertificados] = useState([]); // Todos los certificados sin filtrar por usuario
-  
-  // Estado para el filtrado y la búsqueda
+  const [allCertificados, setAllCertificados] = useState([]);
   const [filtroEstado, setFiltroEstado] = useState('todos');
   const [filtroTipoId, setFiltroTipoId] = useState('todos');
   const [filtroTipoCert, setFiltroTipoCert] = useState('todos');
   const [busqueda, setBusqueda] = useState('');
   const [certificadosFiltrados, setCertificadosFiltrados] = useState([]);
-  
-  // Estado para almacenar datos del usuario
   const [userData, setUserData] = useState(null);
-  
-  // Estado para la paginación
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(15);
-  
-  // Estado para el modal de pago
   const [openPagoDialog, setOpenPagoDialog] = useState(false);
   const [certificadoSeleccionado, setCertificadoSeleccionado] = useState(null);
-  
-  // Estado para mostrar carga
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [snackbar, setSnackbar] = useState({
+    open: false,
+    message: '',
+    severity: 'info'
+  });
+  const [loadingPdf, setLoadingPdf] = useState(false);
 
-  // Formatear precio en pesos colombianos
+  // Función para traducir estados
+  const traducirEstado = (estado) => {
+    if (!estado) return 'Pendiente';
+    const estadoLower = estado.toLowerCase();
+    switch (estadoLower) {
+      case 'pending': return 'Pendiente';
+      case 'completed': return 'Completado';
+      case 'processing': return 'Procesando';
+      case 'failed': return 'Fallido';
+      case 'cancelled': return 'Cancelado';
+      case 'on-hold':
+      case 'pendiente de pago': return 'Pendiente de pago';
+      case 'waiting': return 'En espera';
+      case 'default': return 'Pendiente';
+      case 'pendiente':
+      case 'completado':
+      case 'procesando':
+      case 'fallido':
+      case 'cancelado':
+      case 'en espera': return estado.charAt(0).toUpperCase() + estado.slice(1);
+      default: return 'Pendiente';
+    }
+  };
+
+  // Formatear precios en pesos colombianos
   const formatoPesosColombiano = (valor) => {
     return new Intl.NumberFormat('es-CO', {
       style: 'currency',
@@ -79,7 +103,7 @@ const ConsultarCertificados = ({ pageTitle }) => {
     }).format(valor);
   };
 
-  // Cargar datos del usuario
+  // Cargar datos del usuario desde localStorage
   useEffect(() => {
     const storedUserData = localStorage.getItem('userData');
     if (storedUserData) {
@@ -95,24 +119,19 @@ const ConsultarCertificados = ({ pageTitle }) => {
   // Verificar si el usuario es administrador o profesor
   const isAdminOrTeacher = () => {
     if (!userData) return false;
-    
-    // Verificar el rol principal
     const roleLower = userData.role ? userData.role.toLowerCase() : '';
-    if (roleLower === 'administrador' || roleLower === 'admin' || 
-        roleLower === 'profesor' || roleLower === 'teacher') {
+    if (roleLower === 'administrador' || roleLower === 'admin' ||
+      roleLower === 'profesor' || roleLower === 'teacher') {
       return true;
     }
-    
-    // Verificar roles de Moodle
     if (userData.moodleRoles && Array.isArray(userData.moodleRoles)) {
       return userData.moodleRoles.some(role => {
         const roleName = role.roleName.toLowerCase();
-        return roleName === 'admin' || roleName === 'administrator' || 
-               roleName === 'manager' || roleName === 'teacher' || 
-               roleName === 'editingteacher' || roleName === 'profesor';
+        return roleName === 'admin' || roleName === 'administrator' ||
+          roleName === 'manager' || roleName === 'teacher' ||
+          roleName === 'editingteacher' || roleName === 'profesor';
       });
     }
-    
     return false;
   };
 
@@ -122,18 +141,13 @@ const ConsultarCertificados = ({ pageTitle }) => {
       try {
         setLoading(true);
         const response = await fetch('https://webhook-ecaf-production.up.railway.app/api/certificados');
-        
         if (!response.ok) {
           throw new Error(`Error ${response.status}: ${response.statusText}`);
         }
-        
         const data = await response.json();
-        setAllCertificados(data); // Guardar todos los certificados
-        
-        // Filtrar por email del usuario si no es admin/profesor
+        setAllCertificados(data);
         if (userData && userData.email && !isAdminOrTeacher()) {
-          console.log('Filtrando certificados por email:', userData.email);
-          const userCertificados = data.filter(cert => 
+          const userCertificados = data.filter(cert =>
             cert.correo && cert.correo.toLowerCase() === userData.email.toLowerCase()
           );
           setCertificados(userCertificados);
@@ -149,37 +163,30 @@ const ConsultarCertificados = ({ pageTitle }) => {
         setLoading(false);
       }
     };
-
-    if (userData) { // Solo cargar certificados cuando tengamos datos del usuario
+    if (userData) {
       fetchCertificados();
     }
   }, [userData]);
 
-  // Actualizar la lista filtrada cuando cambien los filtros o la búsqueda
+  // Aplicar filtros y búsqueda
   useEffect(() => {
     if (!certificados.length) return;
-    
     let resultado = [...certificados];
-    
-    // Aplicar filtro por estado si no es "todos"
     if (filtroEstado !== 'todos') {
-      resultado = resultado.filter(cert => cert.estado === filtroEstado);
+      resultado = resultado.filter(cert => {
+        const estadoTraducido = traducirEstado(cert.estado);
+        return estadoTraducido === filtroEstado || cert.estado === filtroEstado;
+      });
     }
-    
-    // Aplicar filtro por tipo de identificación si no es "todos"
     if (filtroTipoId !== 'todos') {
       resultado = resultado.filter(cert => cert.tipo_identificacion === filtroTipoId);
     }
-    
-    // Aplicar filtro por tipo de certificado si no es "todos"
     if (filtroTipoCert !== 'todos') {
       resultado = resultado.filter(cert => cert.tipo_certificado === filtroTipoCert);
     }
-    
-    // Aplicar búsqueda (nombre, número de identificación o referencia)
     if (busqueda.trim()) {
       const busquedaLower = busqueda.toLowerCase().trim();
-      resultado = resultado.filter(cert => 
+      resultado = resultado.filter(cert =>
         (cert.nombre && cert.nombre.toLowerCase().includes(busquedaLower)) ||
         (cert.apellido && cert.apellido.toLowerCase().includes(busquedaLower)) ||
         (cert.numero_identificacion && cert.numero_identificacion.toLowerCase().includes(busquedaLower)) ||
@@ -187,12 +194,10 @@ const ConsultarCertificados = ({ pageTitle }) => {
         (cert.id && cert.id.toString().includes(busquedaLower))
       );
     }
-    
     setCertificadosFiltrados(resultado);
-    setPage(0); // Regresar a la primera página cuando cambian los filtros
+    setPage(0);
   }, [certificados, filtroEstado, filtroTipoId, filtroTipoCert, busqueda]);
 
-  // Funciones para manejar cambios en la paginación
   const handleChangePage = (event, newPage) => {
     setPage(newPage);
   };
@@ -202,7 +207,6 @@ const ConsultarCertificados = ({ pageTitle }) => {
     setPage(0);
   };
 
-  // Funciones para el modal de pago
   const handleOpenPagoDialog = (certificado) => {
     setCertificadoSeleccionado(certificado);
     setOpenPagoDialog(true);
@@ -212,51 +216,129 @@ const ConsultarCertificados = ({ pageTitle }) => {
     setOpenPagoDialog(false);
   };
 
-  // Obtener color del chip según el estado
-  const getEstadoChipColor = (estado) => {
-    switch (estado) {
-      case 'pendiente':
-        return 'warning';
-      case 'pagado':
-        return 'success';
-      case 'procesando':
-        return 'info';
-      case 'error':
-        return 'error';
-      case 'rechazado':
-        return 'error';
-      default:
-        return 'default';
+  // Verificar si el certificado está completado
+  const isCertificadoCompletado = (certificado) => {
+    if (!certificado || !certificado.estado) return false;
+    const estado = certificado.estado.toLowerCase();
+    return estado === 'completado' || estado === 'completed';
+  };
+
+  const handleDownloadCertificado = async (certificado) => {
+    if (!certificado) return;
+    try {
+      setLoadingPdf(true);
+      await certificateService.descargarCertificado(certificado);
+      setSnackbar({
+        open: true,
+        message: 'Certificado descargado con éxito',
+        severity: 'success'
+      });
+    } catch (error) {
+      console.error('Error al descargar certificado:', error);
+      setSnackbar({
+        open: true,
+        message: 'Error al descargar el certificado. Inténtelo de nuevo más tarde.',
+        severity: 'error'
+      });
+    } finally {
+      setLoadingPdf(false);
     }
   };
 
-  // Obtener precios según el tipo de certificado
+  const handleViewCertificado = async (certificado) => {
+    if (!certificado) return;
+    try {
+      setLoadingPdf(true);
+      await certificateService.verCertificado(certificado);
+    } catch (error) {
+      console.error('Error al ver certificado:', error);
+      setSnackbar({
+        open: true,
+        message: 'Error al visualizar el certificado. Inténtelo de nuevo más tarde.',
+        severity: 'error'
+      });
+    } finally {
+      setLoadingPdf(false);
+    }
+  };
+
+  const handleCloseSnackbar = () => {
+    setSnackbar({
+      ...snackbar,
+      open: false
+    });
+  };
+
+  const getEstadoChipColor = (estado) => {
+    const estadoTraducido = traducirEstado(estado);
+    switch (estadoTraducido) {
+      case 'Pendiente':
+      case 'Pendiente de pago':
+      case 'En espera': return 'warning';
+      case 'Completado': return 'success';
+      case 'Procesando': return 'info';
+      case 'Fallido':
+      case 'Cancelado': return 'error';
+      default: return 'default';
+    }
+  };
+
   const getPrecioCertificado = (tipoCertificado) => {
     switch (tipoCertificado) {
       case 'Certificado de Notas':
-      case 'Certificado de notas':
-        return 10000;
+      case 'Certificado de notas': return 10000;
       case 'Certificado de Asistencia':
-      case 'Certificado de asistencia':
-        return 12000;
+      case 'Certificado de asistencia': return 12000;
       case 'Certificado General':
-      case 'Certificado general':
-        return 20000;
-      default:
-        return 10000;
+      case 'Certificado general': return 20000;
+      default: return 10000;
     }
   };
-  
-  // Obtener listas de valores únicos para filtros
-  const estados = certificados.length 
-    ? ['todos', ...new Set(certificados.map(cert => cert.estado).filter(Boolean))]
+
+  const getCertificadoPaymentLink = (tipoCertificado) => {
+    let url = '', label = '';
+    const tipo = tipoCertificado.toLowerCase();
+    if (tipo.includes('asistencia')) {
+      url = 'http://certificados.ecafescuela.com/producto/certificado-de-conducta/';
+      label = 'Pagar Certificado de Conducta';
+    } else if (tipo.includes('basico') || tipo.includes('general')) {
+      url = 'http://certificados.ecafescuela.com/producto/certificado-basico/';
+      label = 'Pagar Certificado Básico';
+    } else if (tipo.includes('notas')) {
+      url = 'http://certificados.ecafescuela.com/producto/certificado-de-notas/';
+      label = 'Pagar Certificado de Notas';
+    } else {
+      url = 'http://certificados.ecafescuela.com/tienda/';
+      label = 'Ir a la Tienda de Certificados';
+    }
+    return (
+      <Button
+        variant="contained"
+        fullWidth
+        startIcon={<PaymentIcon />}
+        href={url}
+        target="_blank"
+        rel="noopener noreferrer"
+        sx={{
+          bgcolor: '#CE0A0A',
+          borderRadius: 2,
+          py: 1.5,
+          '&:hover': { bgcolor: '#b00909' }
+        }}
+      >
+        {label}
+      </Button>
+    );
+  };
+
+  // Listas para filtros
+  const estados = certificados.length
+    ? ['todos', ...new Set(certificados.map(cert => traducirEstado(cert.estado)).filter(Boolean))]
     : ['todos'];
-    
-  const tiposIdentificacion = certificados.length 
+  const tiposIdentificacion = certificados.length
     ? ['todos', ...new Set(certificados.map(cert => cert.tipo_identificacion).filter(Boolean))]
     : ['todos'];
-    
-  const tiposCertificado = certificados.length 
+  const tiposCertificado = certificados.length
     ? ['todos', ...new Set(certificados.map(cert => cert.tipo_certificado).filter(Boolean))]
     : ['todos'];
 
@@ -267,17 +349,9 @@ const ConsultarCertificados = ({ pageTitle }) => {
         <Box p={3} sx={{ marginTop: '20px' }}>
           <Paper elevation={3} sx={{ p: 4, borderRadius: 2, boxShadow: '0 4px 20px rgba(0,0,0,0.05)' }}>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-              <Typography 
-                variant="h5" 
-                sx={{ 
-                  color: '#CE0A0A', 
-                  fontWeight: 600,
-                }}
-              >
+              <Typography variant="h5" sx={{ color: '#CE0A0A', fontWeight: 600 }}>
                 Consulta de Certificados
               </Typography>
-              
-              {/* Indicador de filtro por email para usuarios no admin */}
               {userData && userData.email && !isAdminOrTeacher() && (
                 <Chip
                   icon={<EmailIcon />}
@@ -287,26 +361,20 @@ const ConsultarCertificados = ({ pageTitle }) => {
                   sx={{
                     borderColor: '#CE0A0A',
                     color: '#CE0A0A',
-                    '& .MuiChip-icon': {
-                      color: '#CE0A0A'
-                    }
+                    '& .MuiChip-icon': { color: '#CE0A0A' }
                   }}
                 />
               )}
             </Box>
-            
-            {/* Mensaje para admins que ven todos los certificados */}
             {userData && isAdminOrTeacher() && (
-              <Alert 
-                severity="info" 
+              <Alert
+                severity="info"
                 icon={<InfoIcon />}
-                sx={{ 
-                  mb: 3, 
+                sx={{
+                  mb: 3,
                   backgroundColor: alpha('#CE0A0A', 0.05),
                   color: '#CE0A0A',
-                  '& .MuiAlert-icon': {
-                    color: '#CE0A0A'
-                  }
+                  '& .MuiAlert-icon': { color: '#CE0A0A' }
                 }}
               >
                 <Typography variant="body2">
@@ -314,17 +382,13 @@ const ConsultarCertificados = ({ pageTitle }) => {
                 </Typography>
               </Alert>
             )}
-            
             <Divider sx={{ mb: 4 }} />
-            
-            {/* Herramientas de búsqueda y filtrado */}
             <Grid container spacing={2} mb={4} alignItems="flex-start">
               <Grid item xs={12} md={6}>
                 <TextField
                   fullWidth
                   placeholder="Buscar por nombre, documento o número de referencia"
                   variant="outlined"
-                  
                   value={busqueda}
                   onChange={(e) => setBusqueda(e.target.value)}
                   InputProps={{
@@ -336,11 +400,10 @@ const ConsultarCertificados = ({ pageTitle }) => {
                   }}
                 />
               </Grid>
-              
               <Grid item xs={12} md={6}>
                 <Grid container spacing={2}>
                   <Grid item xs={12} md={4}>
-                    <FormControl fullWidth variant="outlined" >
+                    <FormControl fullWidth variant="outlined">
                       <InputLabel>Filtrar por Estado</InputLabel>
                       <Select
                         value={filtroEstado}
@@ -356,7 +419,7 @@ const ConsultarCertificados = ({ pageTitle }) => {
                     </FormControl>
                   </Grid>
                   <Grid item xs={12} md={4}>
-                    <FormControl fullWidth variant="outlined" >
+                    <FormControl fullWidth variant="outlined">
                       <InputLabel>Filtrar por tipo de ID</InputLabel>
                       <Select
                         value={filtroTipoId}
@@ -372,7 +435,7 @@ const ConsultarCertificados = ({ pageTitle }) => {
                     </FormControl>
                   </Grid>
                   <Grid item xs={12} md={4}>
-                    <FormControl fullWidth variant="outlined" >
+                    <FormControl fullWidth variant="outlined">
                       <InputLabel>Filtrar por Tipo de Certificado</InputLabel>
                       <Select
                         value={filtroTipoCert}
@@ -394,42 +457,35 @@ const ConsultarCertificados = ({ pageTitle }) => {
                   variant="contained"
                   fullWidth
                   startIcon={<SearchIcon />}
-                  sx={{ 
+                  sx={{
                     bgcolor: '#CE0A0A',
                     borderRadius: 2,
                     py: 1.5,
                     mt: 2,
-                    '&:hover': {
-                      bgcolor: '#b00909',
-                    }
+                    '&:hover': { bgcolor: '#b00909' }
                   }}
                 >
                   Buscar
                 </Button>
               </Grid>
             </Grid>
-            
-            {/* Mensaje de error */}
             {error && (
               <Alert severity="error" sx={{ mb: 3 }}>
                 {error}
               </Alert>
             )}
-            
-            {/* Contenido principal */}
             {loading ? (
               <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
                 <CircularProgress sx={{ color: '#CE0A0A' }} />
               </Box>
             ) : certificadosFiltrados.length === 0 ? (
               <Alert severity="info" sx={{ mb: 3 }}>
-                {userData && !isAdminOrTeacher() 
+                {userData && !isAdminOrTeacher()
                   ? `No se encontraron certificados asociados a su correo electrónico (${userData.email}).`
                   : 'No se encontraron certificados que coincidan con su búsqueda.'}
               </Alert>
             ) : (
               <>
-                {/* Tabla de certificados */}
                 <TableContainer>
                   <Table sx={{ minWidth: 650 }}>
                     <TableHead>
@@ -462,13 +518,11 @@ const ConsultarCertificados = ({ pageTitle }) => {
                             </TableCell>
                             <TableCell>{certificado.tipo_certificado}</TableCell>
                             <TableCell>{`#${certificado.id}`}</TableCell>
+                            <TableCell>{new Date(certificado.created_at).toLocaleDateString('es-ES')}</TableCell>
                             <TableCell>
-                              {new Date(certificado.created_at).toLocaleDateString('es-ES')}
-                            </TableCell>
-                            <TableCell>
-                              <Chip 
-                                label={certificado.estado || "pendiente"} 
-                                color={getEstadoChipColor(certificado.estado || "pendiente")} 
+                              <Chip
+                                label={traducirEstado(certificado.estado)}
+                                color={getEstadoChipColor(certificado.estado)}
                                 size="small"
                               />
                             </TableCell>
@@ -479,29 +533,52 @@ const ConsultarCertificados = ({ pageTitle }) => {
                             </TableCell>
                             <TableCell>
                               <Box sx={{ display: 'flex', gap: 1 }}>
-                                {(!certificado.estado || certificado.estado === 'pendiente') && (
+                                {(!certificado.estado ||
+                                  traducirEstado(certificado.estado).toLowerCase() === 'pendiente' ||
+                                  traducirEstado(certificado.estado).toLowerCase() === 'pendiente de pago') && (
                                   <Button
                                     variant="contained"
                                     size="small"
                                     startIcon={<AttachMoneyIcon />}
                                     onClick={() => handleOpenPagoDialog(certificado)}
-                                    sx={{ 
+                                    sx={{
                                       bgcolor: '#4CAF50',
-                                      '&:hover': {
-                                        bgcolor: '#388E3C',
-                                      }
+                                      '&:hover': { bgcolor: '#388E3C' }
                                     }}
                                   >
                                     Pagar
                                   </Button>
                                 )}
-                                
-                                {certificado.estado === 'pagado' && (
-                                  <Tooltip title="Descargar certificado">
-                                    <IconButton size="small" color="primary">
-                                      <DownloadIcon fontSize="small" />
-                                    </IconButton>
-                                  </Tooltip>
+                                {isCertificadoCompletado(certificado) && (
+                                  <>
+                                    <Tooltip title="Ver certificado">
+                                      <IconButton
+                                        size="small"
+                                        color="primary"
+                                        onClick={() => handleViewCertificado(certificado)}
+                                      >
+                                        <VisibilityIcon fontSize="small" />
+                                      </IconButton>
+                                    </Tooltip>
+                                    <Tooltip title="Descargar certificado">
+                                      <IconButton
+                                        size="small"
+                                        color="success"
+                                        onClick={() => handleDownloadCertificado(certificado)}
+                                      >
+                                        <DownloadIcon fontSize="small" />
+                                      </IconButton>
+                                    </Tooltip>
+                                    <Tooltip title="Imprimir certificado">
+                                      <IconButton
+                                        size="small"
+                                        color="default"
+                                        onClick={() => window.print()}
+                                      >
+                                        <PrintIcon fontSize="small" />
+                                      </IconButton>
+                                    </Tooltip>
+                                  </>
                                 )}
                               </Box>
                             </TableCell>
@@ -510,8 +587,6 @@ const ConsultarCertificados = ({ pageTitle }) => {
                     </TableBody>
                   </Table>
                 </TableContainer>
-                
-                {/* Paginación */}
                 <TablePagination
                   rowsPerPageOptions={[15, 30, 45]}
                   component="div"
@@ -528,24 +603,33 @@ const ConsultarCertificados = ({ pageTitle }) => {
           </Paper>
         </Box>
       </Container>
-
-      {/* Modal de Pago */}
       <Dialog
         open={openPagoDialog}
         onClose={handleClosePagoDialog}
         maxWidth="sm"
         fullWidth
-        PaperProps={{
-          sx: { 
-            borderRadius: 2,
-          }
-        }}
+        PaperProps={{ sx: { borderRadius: 2 } }}
       >
-        <DialogTitle sx={{ bgcolor: alpha('#CE0A0A', 0.05), pb: 2 }}>
+        <DialogTitle
+          sx={{
+            bgcolor: alpha('#CE0A0A', 0.05),
+            pb: 2,
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center'
+          }}
+        >
           <Box sx={{ display: 'flex', alignItems: 'center', color: '#CE0A0A' }}>
             <CreditCardIcon sx={{ mr: 1 }} />
             Realizar Pago
           </Box>
+          <IconButton
+            aria-label="close"
+            onClick={handleClosePagoDialog}
+            sx={{ color: '#CE0A0A', '&:hover': { bgcolor: alpha('#CE0A0A', 0.1) } }}
+          >
+            <CloseIcon />
+          </IconButton>
         </DialogTitle>
         <DialogContent sx={{ py: 3 }}>
           {certificadoSeleccionado && (
@@ -553,36 +637,60 @@ const ConsultarCertificados = ({ pageTitle }) => {
               <DialogContentText sx={{ mb: 2 }}>
                 Está a punto de realizar el pago del siguiente certificado:
               </DialogContentText>
-              
               <Box sx={{ backgroundColor: alpha('#CE0A0A', 0.03), p: 2, borderRadius: 1, mb: 3 }}>
                 <Typography variant="subtitle2" color="textSecondary">
                   Referencia:
                 </Typography>
-                <Typography variant="body1" gutterBottom>
-                  #{certificadoSeleccionado.id}
-                </Typography>
-                
+                <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                  <Typography variant="body1" sx={{ mr: 2 }}>
+                    #{certificadoSeleccionado.id}
+                  </Typography>
+                  <Button
+                    variant="outlined"
+                    size="small"
+                    sx={{
+                      borderRadius: 1,
+                      fontSize: '0.7rem',
+                      borderColor: '#CE0A0A',
+                      color: '#CE0A0A',
+                      '&:hover': { borderColor: '#b00909', bgcolor: alpha('#CE0A0A', 0.05) }
+                    }}
+                    onClick={() => {
+                      navigator.clipboard.writeText(`#${certificadoSeleccionado.id}`);
+                      setSnackbar({
+                        open: true,
+                        message: 'Referencia copiada al portapapeles',
+                        severity: 'success'
+                      });
+                    }}
+                  >
+                    Copiar referencia
+                  </Button>
+                </Box>
                 <Typography variant="subtitle2" color="textSecondary">
                   Tipo de certificado:
                 </Typography>
                 <Typography variant="body1" gutterBottom>
                   {certificadoSeleccionado.tipo_certificado}
                 </Typography>
-                
                 <Typography variant="subtitle2" color="textSecondary">
                   Solicitante:
                 </Typography>
                 <Typography variant="body1" gutterBottom>
                   {`${certificadoSeleccionado.nombre} ${certificadoSeleccionado.apellido}`}
                 </Typography>
-                
                 <Typography variant="subtitle2" color="textSecondary">
                   Email:
                 </Typography>
                 <Typography variant="body1" gutterBottom>
                   {certificadoSeleccionado.correo}
                 </Typography>
-                
+                <Typography variant="subtitle2" color="textSecondary">
+                  Estado:
+                </Typography>
+                <Typography variant="body1" gutterBottom>
+                  {traducirEstado(certificadoSeleccionado.estado)}
+                </Typography>
                 <Typography variant="subtitle2" color="textSecondary">
                   Valor a pagar:
                 </Typography>
@@ -590,37 +698,60 @@ const ConsultarCertificados = ({ pageTitle }) => {
                   {formatoPesosColombiano(getPrecioCertificado(certificadoSeleccionado.tipo_certificado))}
                 </Typography>
               </Box>
-              
-              <DialogContentText>
-                En este espacio se implementará el formulario de pago donde podrá ingresar los datos de su tarjeta u otros medios de pago disponibles.
-              </DialogContentText>
+              <Alert severity="warning" sx={{ mb: 3 }}>
+                <Typography variant="subtitle2" sx={{ fontWeight: 'bold' }}>
+                  IMPORTANTE:
+                </Typography>
+                <Typography variant="body2">
+                  - Es <strong>obligatorio</strong> ingresar el número de referencia (#{certificadoSeleccionado.id}) en el formulario de pago.
+                </Typography>
+                <Typography variant="body2">
+                  - Utilice exactamente la misma información personal que ingresó aquí (nombre, apellido, correo, etc.).
+                </Typography>
+              </Alert>
+              <Typography variant="subtitle1" sx={{ fontWeight: 'medium', mb: 2 }}>
+                Seleccione el enlace de pago correspondiente:
+              </Typography>
+              {getCertificadoPaymentLink(certificadoSeleccionado.tipo_certificado)}
             </>
           )}
         </DialogContent>
-        <DialogActions sx={{ px: 3, pb: 3 }}>
-          <Button 
-            onClick={handleClosePagoDialog} 
-            variant="outlined"
-            sx={{ 
-              borderRadius: 2,
-            }}
-          >
-            Cancelar
-          </Button>
-          <Button 
-            variant="contained"
-            sx={{ 
-              bgcolor: '#CE0A0A',
-              borderRadius: 2,
-              '&:hover': {
-                bgcolor: '#b00909',
-              }
-            }}
-          >
-            Continuar con el Pago
-          </Button>
-        </DialogActions>
       </Dialog>
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={6000}
+        onClose={handleCloseSnackbar}
+        message={snackbar.message}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+        action={
+          <IconButton size="small" color="inherit" onClick={handleCloseSnackbar}>
+            <CloseIcon fontSize="small" />
+          </IconButton>
+        }
+      />
+      {loadingPdf && (
+        <Box
+          sx={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.4)',
+            zIndex: 9999,
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            flexDirection: 'column',
+            gap: 2
+          }}
+        >
+          <CircularProgress sx={{ color: '#fff' }} />
+          <Typography variant="body1" sx={{ color: '#fff', fontWeight: 'medium' }}>
+            Generando certificado...
+          </Typography>
+        </Box>
+      )}
     </Box>
   );
 };
