@@ -18,7 +18,9 @@ import {
   Stack,
   List,
   ListItem,
-  ListItemText
+  ListItemText,
+  Paper,
+  Button
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import NotificationsIcon from '@mui/icons-material/Notifications';
@@ -27,18 +29,37 @@ import ChatIcon from '@mui/icons-material/Chat';
 import PersonIcon from '@mui/icons-material/Person';
 import SettingsIcon from '@mui/icons-material/Settings';
 import LogoutIcon from '@mui/icons-material/Logout';
+import WorkspacePremiumIcon from '@mui/icons-material/WorkspacePremium';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import SchoolIcon from '@mui/icons-material/School';
 import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
 import SupervisorAccountIcon from '@mui/icons-material/SupervisorAccount';
 import MoreHorizIcon from '@mui/icons-material/MoreHoriz';
+import DoneAllIcon from '@mui/icons-material/DoneAll';
+import FiberNewIcon from '@mui/icons-material/FiberNew';
+import axios from 'axios';
+import io from 'socket.io-client';
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+
+
+// Definir URL de la API
+const API_URL = 'https://webhook-ecaf-production.up.railway.app'; // Ajusta esto a la URL de tu API
 
 const Navbar = ({ pageTitle }) => {
+  // Estados para el menú de perfil
   const [anchorEl, setAnchorEl] = useState(null);
   const open = Boolean(anchorEl);
   const navigate = useNavigate();
   const [userData, setUserData] = useState(null);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  
+  // Estados para el sistema de notificaciones
+  const [notificationCount, setNotificationCount] = useState(0);
+  const [notifications, setNotifications] = useState([]);
+  const [notificationAnchorEl, setNotificationAnchorEl] = useState(null);
+  const notificationsOpen = Boolean(notificationAnchorEl);
+  const [isLoadingNotifications, setIsLoadingNotifications] = useState(false);
   
   // Cargar datos del usuario al montar el componente
   useEffect(() => {
@@ -51,8 +72,214 @@ const Navbar = ({ pageTitle }) => {
         console.error('Error al analizar los datos del usuario:', error);
       }
     }
-  }, []);
+    
+  // Cargar contador de notificaciones iniciales
+  fetchNotificationCount();
   
+  // Conectar a Socket.IO para notificaciones en tiempo real con opciones adicionales
+  const socket = io(API_URL, {
+    transports: ['websocket', 'polling'], // Intenta primero WebSocket, luego polling como fallback
+    reconnectionAttempts: 5, // Número de intentos de reconexión
+    reconnectionDelay: 1000, // Tiempo entre intentos de reconexión (ms)
+    timeout: 20000, // Timeout para la conexión inicial (ms)
+    path: '/socket.io/', // Asegúrate de que coincida con la configuración del servidor
+  });
+  
+  // Añade log cuando socket está intentando conectar
+  console.log('Intentando conectar a Socket.IO...', API_URL);
+  
+  socket.on('connect', () => {
+    console.log('✅ Conectado a Socket.IO para notificaciones, socket ID:', socket.id);
+  });
+  
+  socket.on('connect_error', (error) => {
+    console.error('❌ Error de conexión Socket.IO:', error);
+  });
+  
+  socket.on('certificateStatusChanged', (notification) => {
+    console.log('🔔 Notificación recibida:', notification);
+    
+    // Incrementar el contador de notificaciones
+    setNotificationCount(prev => prev + 1);
+    
+    // Agregar la nueva notificación a la lista si está abierta
+    setNotifications(prev => [notification, ...prev]);
+    
+    // Mostrar una notificación toast estilizada
+    toast.info(
+      <div>
+        <div style={{ 
+          fontWeight: 600, 
+          marginBottom: '4px', 
+          color: '#CE0A0A',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '6px'
+        }}>
+          <WorkspacePremiumIcon fontSize="small" /> 
+          Certificado Actualizado
+        </div>
+        <div style={{ color: '#333' }}>
+          {notification.clientName ? (
+            <>El certificado de <strong>{notification.clientName}</strong> </>
+          ) : (
+            <>El certificado #{notification.certificate_id} </>
+          )}
+          cambió a <span style={{ fontWeight: 600, color: '#CE0A0A' }}>
+            {translateStatus(notification.newStatus)}
+          </span>
+        </div>
+      </div>, 
+      {
+        position: "bottom-right",
+        autoClose: 5000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        style: {
+          borderRadius: '8px',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+          borderLeft: '4px solid #CE0A0A'
+        },
+        progressStyle: {
+          background: 'linear-gradient(to right, #CE0A0A, #e74c3c)'
+        }
+      }
+    );
+  });
+  
+  socket.on('disconnect', (reason) => {
+    console.log('⚠️ Desconectado de Socket.IO, razón:', reason);
+  });
+  
+  // Limpiar Socket.IO al desmontar
+  return () => {
+    console.log('Desconectando socket...');
+    socket.disconnect();
+  };
+}, []);
+  
+  // Función para obtener el contador de notificaciones
+  const fetchNotificationCount = async () => {
+    try {
+      const response = await axios.get(`${API_URL}/api/certificados/notificaciones/contador`);
+      setNotificationCount(response.data.count);
+      console.log('📊 Contador de notificaciones:', response.data.count);
+    } catch (error) {
+      console.error('❌ Error al obtener contador de notificaciones:', error);
+    }
+  };
+  
+  const fetchNotifications = async () => {
+    try {
+      setIsLoadingNotifications(true);
+      const response = await axios.get(`${API_URL}/api/certificados/notificaciones?limit=10`);
+      setNotifications(response.data);
+      console.log('📋 Notificaciones cargadas:', response.data.length);
+      setIsLoadingNotifications(false);
+    } catch (error) {
+      console.error('❌ Error al obtener notificaciones:', error);
+      setIsLoadingNotifications(false);
+    }
+  };
+  
+  // Función para marcar notificaciones como leídas
+  const markAsRead = async (ids) => {
+    if (!ids || ids.length === 0) return;
+    
+    try {
+      await axios.put(`${API_URL}/api/certificados/notificaciones/marcar-leidas`, { ids });
+      
+      // Actualizar la UI
+      setNotifications(prev => 
+        prev.map(notif => 
+          ids.includes(notif.id) ? {...notif, read_status: true} : notif
+        )
+      );
+      
+      // Actualizar el contador
+      fetchNotificationCount();
+    } catch (error) {
+      console.error('Error al marcar notificaciones como leídas:', error);
+    }
+  };
+  
+  // Función para marcar todas como leídas
+  const markAllAsRead = async () => {
+    const unreadIds = notifications
+      .filter(notif => !notif.read_status)
+      .map(notif => notif.id);
+      
+    if (unreadIds.length > 0) {
+      await markAsRead(unreadIds);
+    }
+  };
+  
+  // Función para traducir estados de certificados
+  const translateStatus = (status) => {
+    const statusMap = {
+      'pending': 'Pendiente',
+      'processing': 'En proceso',
+      'completed': 'Completado',
+      'rejected': 'Rechazado',
+      'approved': 'Aprobado',
+      'cancelled': 'Cancelado'
+      // Añadir más estados según tus necesidades
+    };
+    
+    return statusMap[status] || status;
+  };
+  
+  // Abrir menú de notificaciones
+  const handleNotificationClick = (event) => {
+    setNotificationAnchorEl(event.currentTarget);
+    // Cargar notificaciones al abrir
+    fetchNotifications();
+  };
+  
+  // Cerrar menú de notificaciones
+  const handleNotificationClose = () => {
+    setNotificationAnchorEl(null);
+  };
+  
+  // Manejar clic en una notificación
+  const handleNotificationItemClick = (notification) => {
+    // Si no está leída, márcarla como leída
+    if (!notification.read_status) {
+      markAsRead([notification.id]);
+    }
+    
+    // Aquí puedes añadir navegación a la página de detalles si es necesario
+    // Por ejemplo: navigate(`/certificados/${notification.certificate_id}`);
+  };
+  
+  // Formatear fecha para las notificaciones
+  const formatDate = (dateString) => {
+    if (!dateString) return '';
+    
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffMs = now - date;
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMins / 60);
+    const diffDays = Math.floor(diffHours / 24);
+    
+    if (diffMins < 1) return 'Ahora';
+    if (diffMins < 60) return `Hace ${diffMins} min`;
+    if (diffHours < 24) return `Hace ${diffHours} h`;
+    if (diffDays === 1) return 'Ayer';
+    if (diffDays < 7) return `Hace ${diffDays} días`;
+    
+    return date.toLocaleDateString('es-ES', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric'
+    });
+  };
+
+  // Manejo del menú de usuario
   const handleClick = (event) => {
     setAnchorEl(event.currentTarget);
   };
@@ -70,7 +297,6 @@ const Navbar = ({ pageTitle }) => {
     handleClose();
     
     // Simulamos un pequeño retraso para que el usuario vea el loader
-    // Este retraso puede ser sustituido por una llamada a la API real para cerrar sesión
     setTimeout(() => {
       // Eliminar datos de autenticación del localStorage
       localStorage.removeItem('authToken');
@@ -144,6 +370,19 @@ const Navbar = ({ pageTitle }) => {
         </Typography>
       </Backdrop>
       
+      {/* Contenedor de Toast para notificaciones emergentes */}
+      <ToastContainer
+        position="bottom-right"
+        autoClose={5000}
+        hideProgressBar={false}
+        newestOnTop
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+      />
+      
       <AppBar 
         position="fixed" 
         elevation={0} 
@@ -201,11 +440,13 @@ const Navbar = ({ pageTitle }) => {
             </IconButton>
           </Tooltip>
           
-          {/* Tooltip para notificaciones */}
-          <Tooltip title="Notificaciones">
+          {/* Tooltip para notificaciones - SISTEMA ACTUALIZADO */}
+          <Tooltip title="Notificaciones de certificados">
             <IconButton 
+              onClick={handleNotificationClick}
               sx={{ 
-                color: '#666', 
+                color: notificationsOpen ? '#CE0A0A' : '#666', 
+                backgroundColor: notificationsOpen ? 'rgba(206, 10, 10, 0.08)' : 'transparent',
                 '&:hover': { 
                   color: '#CE0A0A',
                   backgroundColor: 'rgba(206, 10, 10, 0.08)'
@@ -213,11 +454,179 @@ const Navbar = ({ pageTitle }) => {
                 transition: 'all 0.2s'
               }}
             >
-              <Badge badgeContent={3} color="error" variant="dot">
+              <Badge 
+                badgeContent={notificationCount} 
+                color="error" 
+                sx={{ 
+                  '& .MuiBadge-badge': { 
+                    backgroundColor: '#CE0A0A',
+                    fontWeight: 'bold'
+                  } 
+                }}
+              >
                 <NotificationsIcon />
               </Badge>
             </IconButton>
           </Tooltip>
+          
+          {/* Menú de notificaciones */}
+          <Menu
+            anchorEl={notificationAnchorEl}
+            open={notificationsOpen}
+            onClose={handleNotificationClose}
+            PaperProps={{
+              elevation: 2,
+              sx: {
+                width: 360,
+                maxHeight: 500,
+                borderRadius: 2,
+                mt: 1.5,
+                boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                '&:before': {
+                  content: '""',
+                  display: 'block',
+                  position: 'absolute',
+                  top: 0,
+                  right: 14,
+                  width: 10,
+                  height: 10,
+                  bgcolor: 'background.paper',
+                  transform: 'translateY(-50%) rotate(45deg)',
+                  zIndex: 0,
+                },
+              },
+            }}
+            transformOrigin={{ horizontal: 'right', vertical: 'top' }}
+            anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
+          >
+            {/* Encabezado del menú de notificaciones */}
+            <Box sx={{ 
+              display: 'flex', 
+              justifyContent: 'space-between', 
+              alignItems: 'center', 
+              px: 2, 
+              py: 1.5,
+              borderBottom: '1px solid rgba(0,0,0,0.08)' 
+            }}>
+              <Typography variant="subtitle1" sx={{ fontWeight: 600, color: '#333' }}>
+                Notificaciones
+              </Typography>
+              
+              {notificationCount > 0 && (
+                <Button 
+                  size="small" 
+                  startIcon={<DoneAllIcon fontSize="small" />}
+                  onClick={markAllAsRead}
+                  sx={{ 
+                    textTransform: 'none', 
+                    color: '#CE0A0A',
+                    '&:hover': { backgroundColor: 'rgba(206,10,10,0.08)' }
+                  }}
+                >
+                  Marcar todas como leídas
+                </Button>
+              )}
+            </Box>
+            
+            {/* Lista de notificaciones */}
+            <Box sx={{ overflow: 'auto', maxHeight: 380 }}>
+              {isLoadingNotifications ? (
+                <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
+                  <CircularProgress size={30} sx={{ color: '#CE0A0A' }} />
+                </Box>
+              ) : notifications.length === 0 ? (
+                <Box sx={{ p: 3, textAlign: 'center' }}>
+                  <Typography variant="body2" color="text.secondary">
+                    No hay notificaciones
+                  </Typography>
+                </Box>
+              ) : (
+                <List sx={{ p: 0 }}>
+                  {notifications.map((notification) => (
+                    <ListItem 
+                      key={notification.id}
+                      alignItems="flex-start"
+                      sx={{ 
+                        px: 2, 
+                        py: 1.5,
+                        backgroundColor: notification.read_status ? 'transparent' : 'rgba(206,10,10,0.04)',
+                        borderBottom: '1px solid rgba(0,0,0,0.06)',
+                        cursor: 'pointer',
+                        '&:hover': { backgroundColor: 'rgba(0,0,0,0.04)' }
+                      }}
+                      onClick={() => handleNotificationItemClick(notification)}
+                    >
+                      <Box sx={{ display: 'flex', width: '100%' }}>
+                        <ListItemIcon sx={{ minWidth: 40 }}>
+                          {!notification.read_status ? (
+                            <FiberNewIcon sx={{ color: '#CE0A0A' }} />
+                          ) : (
+                            <NotificationsIcon sx={{ color: '#999' }} />
+                          )}
+                        </ListItemIcon>
+                        
+                        <Box sx={{ flex: 1 }}>
+                          <Typography variant="subtitle2" component="div" sx={{ fontWeight: 600 }}>
+                            Certificado #{notification.certificate_id}
+                            {notification.nombre && notification.apellido && (
+                              <Typography component="span" variant="body2" sx={{ ml: 0.5 }}>
+                                - {notification.nombre} {notification.apellido}
+                              </Typography>
+                            )}
+                          </Typography>
+                          
+                          <Typography variant="body2" color="text.secondary">
+                            Estado cambiado de{' '}
+                            <Typography component="span" variant="body2" sx={{ fontWeight: 500 }}>
+                              {translateStatus(notification.old_status || 'nuevo')}
+                            </Typography>
+                            {' '}a{' '}
+                            <Typography 
+                              component="span" 
+                              variant="body2" 
+                              sx={{ 
+                                fontWeight: 600, 
+                                color: '#CE0A0A'
+                              }}
+                            >
+                              {translateStatus(notification.new_status)}
+                            </Typography>
+                          </Typography>
+                          
+                          <Typography 
+                            variant="caption" 
+                            color="text.secondary"
+                            sx={{ display: 'block', mt: 0.5 }}
+                          >
+                            {formatDate(notification.created_at)}
+                          </Typography>
+                        </Box>
+                      </Box>
+                    </ListItem>
+                  ))}
+                </List>
+              )}
+            </Box>
+            
+            {/* Pie del menú de notificaciones */}
+            <Box sx={{ p: 1.5, borderTop: '1px solid rgba(0,0,0,0.08)', textAlign: 'center' }}>
+              <Button 
+                fullWidth 
+                size="small"
+                onClick={() => {
+                  handleNotificationClose();
+                  navigate('/certificados/consultar');
+                }}
+                sx={{ 
+                  textTransform: 'none', 
+                  color: '#CE0A0A',
+                  '&:hover': { backgroundColor: 'rgba(206,10,10,0.08)' }
+                }}
+              >
+                Ver todos los certificados
+              </Button>
+            </Box>
+          </Menu>
           
           {/* Tooltip para chat */}
           <Tooltip title="Chat">
