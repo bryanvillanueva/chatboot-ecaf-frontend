@@ -3,14 +3,19 @@ import { io } from 'socket.io-client';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import axios from 'axios';
+import { useLocation, useNavigate } from 'react-router-dom'; // Añadir imports
 import './NotificationSystem.css';
 
-const API_URL = 'http://tu-servidor:3000'; // Ajusta a la URL de tu API
+const API_URL = 'http://tu-servidor:3000'; // Mantenemos la URL original
 
 const NotificationSystem = () => {
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [showDropdown, setShowDropdown] = useState(false);
+  
+  // Añadir hooks de react-router
+  const navigate = useNavigate();
+  const location = useLocation();
 
   // Conectar a Socket.IO y cargar datos iniciales
   useEffect(() => {
@@ -22,8 +27,13 @@ const NotificationSystem = () => {
     
     // Escuchar por nuevas notificaciones
     socket.on('certificateStatusChanged', (notification) => {
-      // Mostrar una notificación toast
-      toast.info(`Certificado de ${notification.clientName} cambió de ${notification.oldStatus || 'pendiente'} a ${notification.newStatus}`);
+      // Mostrar una notificación toast con función de clic
+      toast.info(
+        `Certificado de ${notification.clientName} cambió de ${notification.oldStatus || 'pendiente'} a ${notification.newStatus}`,
+        {
+          onClick: handleNotificationClick
+        }
+      );
       
       // Incrementar el contador de no leídos
       setUnreadCount(prev => prev + 1);
@@ -37,6 +47,25 @@ const NotificationSystem = () => {
       socket.disconnect();
     };
   }, []);
+  
+  // Añadir función para manejar click en notificaciones
+  const handleNotificationClick = () => {
+    // Verificar si estamos en la página de certificados
+    const onCertificatesPage = location.pathname === '/certificados/consultar';
+    
+    if (onCertificatesPage) {
+      // Si ya estamos en la página de certificados, recargamos
+      window.location.reload();
+    } else {
+      // Si no, navegamos a la página de certificados
+      navigate('/certificados/consultar');
+    }
+    
+    // Cerrar dropdown si está abierto
+    if (showDropdown) {
+      setShowDropdown(false);
+    }
+  };
   
   // Cargar notificaciones cuando se abre el dropdown
   useEffect(() => {
@@ -141,6 +170,8 @@ const NotificationSystem = () => {
                       if (!notif.read_status) {
                         markAsRead([notif.id]);
                       }
+                      // Añadir navegación al hacer clic
+                      handleNotificationClick();
                     }}
                   >
                     <div className="notification-content">
@@ -160,7 +191,8 @@ const NotificationSystem = () => {
             </div>
             
             <div className="dropdown-footer">
-              <a href="/certificados">Ver todos</a>
+              {/* Actualizar el enlace a la ruta correcta */}
+              <a href="/certificados/consultar">Ver todos</a>
             </div>
           </div>
         )}

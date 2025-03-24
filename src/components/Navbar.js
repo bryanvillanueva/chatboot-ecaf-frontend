@@ -22,7 +22,7 @@ import {
   Paper,
   Button
 } from '@mui/material';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom'; // Añadido useLocation
 import NotificationsIcon from '@mui/icons-material/Notifications';
 import EventNoteIcon from '@mui/icons-material/EventNote';
 import ChatIcon from '@mui/icons-material/Chat';
@@ -51,6 +51,7 @@ const Navbar = ({ pageTitle }) => {
   const [anchorEl, setAnchorEl] = useState(null);
   const open = Boolean(anchorEl);
   const navigate = useNavigate();
+  const location = useLocation(); // Añadido useLocation hook
   const [userData, setUserData] = useState(null);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   
@@ -105,6 +106,9 @@ const Navbar = ({ pageTitle }) => {
     // Agregar la nueva notificación a la lista si está abierta
     setNotifications(prev => [notification, ...prev]);
     
+    // Verificar si estamos en la página de certificados
+    const onCertificatesPage = location.pathname === '/certificados/consultar';
+    
     // Mostrar una notificación toast estilizada
     toast.info(
       <div>
@@ -145,6 +149,13 @@ const Navbar = ({ pageTitle }) => {
         },
         progressStyle: {
           background: 'linear-gradient(to right, #CE0A0A, #e74c3c)'
+        },
+        onClick: () => {
+          if (onCertificatesPage) {
+            window.location.reload();
+          } else {
+            navigate('/certificados/consultar');
+          }
         }
       }
     );
@@ -159,7 +170,7 @@ const Navbar = ({ pageTitle }) => {
     console.log('Desconectando socket...');
     socket.disconnect();
   };
-}, []);
+}, [location.pathname]); // Añadir dependencia location.pathname
   
   // Función para obtener el contador de notificaciones
   const fetchNotificationCount = async () => {
@@ -244,15 +255,26 @@ const Navbar = ({ pageTitle }) => {
     setNotificationAnchorEl(null);
   };
   
-  // Manejar clic en una notificación
+  // Manejar clic en una notificación - Actualizado
   const handleNotificationItemClick = (notification) => {
     // Si no está leída, márcarla como leída
     if (!notification.read_status) {
       markAsRead([notification.id]);
     }
     
-    // Aquí puedes añadir navegación a la página de detalles si es necesario
-    // Por ejemplo: navigate(`/certificados/${notification.certificate_id}`);
+    // Verificar si estamos en la página de certificados
+    const onCertificatesPage = location.pathname === '/certificados/consultar';
+    
+    // Cerrar el menú de notificaciones
+    handleNotificationClose();
+    
+    if (onCertificatesPage) {
+      // Si ya estamos en la página de certificados, recargamos
+      window.location.reload();
+    } else {
+      // Si no, navegamos a la página de certificados
+      navigate('/certificados/consultar');
+    }
   };
   
   // Formatear fecha para las notificaciones
@@ -615,7 +637,13 @@ const Navbar = ({ pageTitle }) => {
                 size="small"
                 onClick={() => {
                   handleNotificationClose();
-                  navigate('/certificados/consultar');
+                  // Verificar si estamos en la página de certificados
+                  const onCertificatesPage = location.pathname === '/certificados/consultar';
+                  if (onCertificatesPage) {
+                    window.location.reload();
+                  } else {
+                    navigate('/certificados/consultar');
+                  }
                 }}
                 sx={{ 
                   textTransform: 'none', 

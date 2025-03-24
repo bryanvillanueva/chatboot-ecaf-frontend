@@ -299,16 +299,16 @@ const ConsultarCertificados = ({ pageTitle }) => {
     let url = '', label = '';
     const tipo = tipoCertificado.toLowerCase();
     if (tipo.includes('asistencia')) {
-      url = 'http://certificados.ecafescuela.com/producto/certificado-de-conducta/';
+      url = 'https://ecafescuela.com/producto/certificado-de-asistencia/';
       label = 'Pagar Certificado de Conducta';
     } else if (tipo.includes('basico') || tipo.includes('general')) {
-      url = 'http://certificados.ecafescuela.com/producto/certificado-basico/';
+      url = 'https://ecafescuela.com/producto/certificado-general/';
       label = 'Pagar Certificado Básico';
     } else if (tipo.includes('notas')) {
-      url = 'http://certificados.ecafescuela.com/producto/certificado-de-notas/';
+      url = 'https://ecafescuela.com/producto/certificado-de-notas/';
       label = 'Pagar Certificado de Notas';
     } else {
-      url = 'http://certificados.ecafescuela.com/tienda/';
+      url = 'https://ecafescuela.com/tienda/';
       label = 'Ir a la Tienda de Certificados';
     }
     return (
@@ -506,7 +506,7 @@ const ConsultarCertificados = ({ pageTitle }) => {
                       {certificadosFiltrados
                         .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
                         .map((certificado) => (
-                          <TableRow key={certificado.id} hover>
+                          <TableRow key={certificado.referencia} hover>
                             <TableCell>{`${certificado.nombre} ${certificado.apellido}`}</TableCell>
                             <TableCell>{certificado.tipo_identificacion}</TableCell>
                             <TableCell>{certificado.numero_identificacion}</TableCell>
@@ -517,7 +517,7 @@ const ConsultarCertificados = ({ pageTitle }) => {
                               </Box>
                             </TableCell>
                             <TableCell>{certificado.tipo_certificado}</TableCell>
-                            <TableCell>{`#${certificado.id}`}</TableCell>
+                            <TableCell>{`${certificado.referencia}`}</TableCell>
                             <TableCell>{new Date(certificado.created_at).toLocaleDateString('es-ES')}</TableCell>
                             <TableCell>
                               <Chip
@@ -643,7 +643,7 @@ const ConsultarCertificados = ({ pageTitle }) => {
                 </Typography>
                 <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
                   <Typography variant="body1" sx={{ mr: 2 }}>
-                    #{certificadoSeleccionado.id}
+                    {certificadoSeleccionado.referencia}
                   </Typography>
                   <Button
                     variant="outlined"
@@ -656,7 +656,7 @@ const ConsultarCertificados = ({ pageTitle }) => {
                       '&:hover': { borderColor: '#b00909', bgcolor: alpha('#CE0A0A', 0.05) }
                     }}
                     onClick={() => {
-                      navigator.clipboard.writeText(`#${certificadoSeleccionado.id}`);
+                      navigator.clipboard.writeText(`${certificadoSeleccionado.referencia}`);
                       setSnackbar({
                         open: true,
                         message: 'Referencia copiada al portapapeles',
@@ -703,7 +703,7 @@ const ConsultarCertificados = ({ pageTitle }) => {
                   IMPORTANTE:
                 </Typography>
                 <Typography variant="body2">
-                  - Es <strong>obligatorio</strong> ingresar el número de referencia (#{certificadoSeleccionado.id}) en el formulario de pago.
+                  - Es <strong>obligatorio</strong> ingresar el número de referencia ({certificadoSeleccionado.referencia}) en el formulario de pago.
                 </Typography>
                 <Typography variant="body2">
                   - Utilice exactamente la misma información personal que ingresó aquí (nombre, apellido, correo, etc.).
