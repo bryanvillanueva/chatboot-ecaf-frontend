@@ -1,0 +1,13 @@
+{
+  "files": {
+    "main.css": "/chatboot-ecaf-frontend/static/css/main.2a9a26f2.css",
+    "main.js": "/chatboot-ecaf-frontend/static/js/main.5731384f.js",
+    "index.html": "/chatboot-ecaf-frontend/index.html",
+    "main.2a9a26f2.css.map": "/chatboot-ecaf-frontend/static/css/main.2a9a26f2.css.map",
+    "main.5731384f.js.map": "/chatboot-ecaf-frontend/static/js/main.5731384f.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.2a9a26f2.css",
+    "static/js/main.5731384f.js"
+  ]
+}
