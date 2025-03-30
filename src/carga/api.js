@@ -1,16 +1,16 @@
 import axios from 'axios';
 
-// URL base de la API - Ajustar según tu configuración
-const API_BASE_URL = process.env.REACT_APP_API_URL || '';
+// URL base de la API con la URL directa
+const API_BASE_URL = 'https://webhook-ecaf-production.up.railway.app';
 
 // Servicio para cargar estudiantes
 export const uploadEstudiantes = async (file) => {
   const formData = new FormData();
-  formData.append('excel_file', file);
-  formData.append('type', 'estudiantes');
+  formData.append('archivo', file); // Cambiar de 'excel_file' a 'archivo'
+  formData.append('tipo', 'estudiantes'); // Cambiar de 'type' a 'tipo'
 
   try {
-    const response = await axios.post(`${API_BASE_URL}/api/carga/estudiantes`, formData, {
+    const response = await axios.post(`${API_BASE_URL}/api/cargar-excel`, formData, { // Cambiar la ruta
       headers: {
         'Content-Type': 'multipart/form-data'
       }
@@ -25,11 +25,11 @@ export const uploadEstudiantes = async (file) => {
 // Servicio para cargar notas, programas y materias
 export const uploadNotas = async (file) => {
   const formData = new FormData();
-  formData.append('excel_file', file);
-  formData.append('type', 'notas');
+  formData.append('archivo', file); // Cambiar de 'excel_file' a 'archivo'
+  formData.append('tipo', 'notas'); // Cambiar de 'type' a 'tipo'
 
   try {
-    const response = await axios.post(`${API_BASE_URL}/api/carga/notas`, formData, {
+    const response = await axios.post(`${API_BASE_URL}/api/cargar-excel`, formData, { // Cambiar la ruta
       headers: {
         'Content-Type': 'multipart/form-data'
       }
@@ -44,7 +44,7 @@ export const uploadNotas = async (file) => {
 // Servicio para obtener plantillas
 export const getPlantilla = async (tipo) => {
   try {
-    const response = await axios.get(`${API_BASE_URL}/api/carga/plantillas/${tipo}`, {
+    const response = await axios.get(`${API_BASE_URL}/api/plantillas-excel/${tipo}`, { // Cambiar la ruta
       responseType: 'blob'
     });
     
