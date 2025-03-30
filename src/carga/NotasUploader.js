@@ -28,8 +28,7 @@ import {
   UploadFile as UploadFileIcon,
   Warning as WarningIcon
 } from '@mui/icons-material';
-import axios from 'axios';
-import { getPlantilla } from './api';
+import { uploadNotas, getPlantilla } from './api';
 
 const NotasUploader = ({ setLoading, setResult }) => {
   const [file, setFile] = useState(null);
@@ -87,34 +86,19 @@ const NotasUploader = ({ setLoading, setResult }) => {
     }
 
     setLoading(true);
-    const formData = new FormData();
-    formData.append('excel_file', file);
-    formData.append('type', 'notas');
-
+    
     try {
-      // Simular una carga real (para desarrollo)
-      // Comentar esta sección y descomentar la de abajo para producción
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      // Usar la función API en lugar de implementación directa
+      const response = await uploadNotas(file);
+      
       setResult({
         success: true,
-        message: `Se procesaron 22 registros con éxito`,
-        details: `Total registros: 22\nProgramas creados: 3\nMaterias creadas: 8\nNotas registradas: 22\nErrores: 0`
+        message: `Se procesaron ${response.procesados || 0} registros con éxito`,
+        details: `Total registros: ${response.procesados || 0}
+Exitosos: ${response.resultados?.exitosos || 0}
+Fallidos: ${response.resultados?.fallidos || 0}
+${response.resultados?.errores?.length > 0 ? '\nErrores:\n' + response.resultados.errores.join('\n') : ''}`
       });
-
-      // Producción:
-      /*
-      const response = await axios.post('/api/carga/notas', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data'
-        }
-      });
-
-      setResult({
-        success: true,
-        message: `Se procesaron ${response.data.processed} registros con éxito`,
-        details: response.data.details || ''
-      });
-      */
       
       // Limpiar archivo después de cargar
       setFile(null);
@@ -123,7 +107,7 @@ const NotasUploader = ({ setLoading, setResult }) => {
       setResult({
         success: false,
         message: 'Error al procesar el archivo',
-        details: error.response?.data?.message || error.message
+        details: error.response?.data?.error || error.message
       });
     } finally {
       setLoading(false);
@@ -141,12 +125,9 @@ const NotasUploader = ({ setLoading, setResult }) => {
   const handleDownloadTemplate = async () => {
     setDownloadingTemplate(true);
     try {
-      // Para desarrollo - simular descarga
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Usar la función de API para descargar plantilla
+      await getPlantilla('notas');
       setDownloadingTemplate(false);
-      
-      // En producción:
-      // await getPlantilla('notas');
     } catch (error) {
       console.error('Error al descargar plantilla:', error);
       setResult({

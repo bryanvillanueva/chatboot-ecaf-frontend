@@ -154,7 +154,6 @@ const App = () => {
                   <Route path="/certificados/generar" element={<Generar pageTitle="Generar Certificado"/>} />
                   <Route path="/certificados/consultar" element={<Consultar pageTitle="Consultar Certificados"/>} />
                   <Route path="/carga" element={<CargaExcel pageTitle="Carga de Información"/>} />
-                  <Route path="/carga" element={<CargaExcel pageTitle="Carga de Información"/>} />
                 </Routes>
               </Layout>
             ) : (

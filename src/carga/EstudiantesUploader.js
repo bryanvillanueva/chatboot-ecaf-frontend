@@ -26,8 +26,7 @@ import {
   FileDownload as FileDownloadIcon,
   UploadFile as UploadFileIcon
 } from '@mui/icons-material';
-import axios from 'axios';
-import { getPlantilla } from './api';
+import { uploadEstudiantes, getPlantilla } from './api';
 
 const EstudiantesUploader = ({ setLoading, setResult }) => {
   const [file, setFile] = useState(null);
@@ -85,35 +84,20 @@ const EstudiantesUploader = ({ setLoading, setResult }) => {
     }
 
     setLoading(true);
-    const formData = new FormData();
-    formData.append('excel_file', file);
-    formData.append('type', 'estudiantes');
-
+    
     try {
-      // Simular una carga real (para desarrollo)
-      // Comentar esta sección y descomentar la de abajo para producción
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      // Usar la función API en lugar de implementación directa
+      const response = await uploadEstudiantes(file);
+      
       setResult({
         success: true,
-        message: `Se procesaron 15 estudiantes con éxito`,
-        details: `Total registros: 15\nNuevos estudiantes: 8\nActualizados: 7\nErrores: 0`
+        message: `Se procesaron ${response.procesados || 0} estudiantes con éxito`,
+        details: `Total registros: ${response.procesados || 0}
+Exitosos: ${response.resultados?.exitosos || 0}
+Fallidos: ${response.resultados?.fallidos || 0}
+${response.resultados?.errores?.length > 0 ? '\nErrores:\n' + response.resultados.errores.join('\n') : ''}`
       });
-
-      // Producción:
-      /*
-      const response = await axios.post('/api/carga/estudiantes', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data'
-        }
-      });
-
-      setResult({
-        success: true,
-        message: `Se procesaron ${response.data.processed} estudiantes con éxito`,
-        details: response.data.details || ''
-      });
-      */
-
+      
       // Limpiar archivo después de cargar
       setFile(null);
     } catch (error) {
@@ -121,7 +105,7 @@ const EstudiantesUploader = ({ setLoading, setResult }) => {
       setResult({
         success: false,
         message: 'Error al procesar el archivo',
-        details: error.response?.data?.message || error.message
+        details: error.response?.data?.error || error.message
       });
     } finally {
       setLoading(false);
@@ -139,12 +123,9 @@ const EstudiantesUploader = ({ setLoading, setResult }) => {
   const handleDownloadTemplate = async () => {
     setDownloadingTemplate(true);
     try {
-      // Para desarrollo - simular descarga
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Usar la función de API para descargar plantilla
+      await getPlantilla('estudiantes');
       setDownloadingTemplate(false);
-      
-      // En producción:
-      // await getPlantilla('estudiantes');
     } catch (error) {
       console.error('Error al descargar plantilla:', error);
       setResult({
