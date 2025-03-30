@@ -5,6 +5,7 @@ import ChatIcon from '@mui/icons-material/Chat';
 import WorkspacePremiumIcon from '@mui/icons-material/WorkspacePremium';
 import AddIcon from '@mui/icons-material/Add';
 import SearchIcon from '@mui/icons-material/Search';
+import UploadFileIcon from '@mui/icons-material/UploadFile';
 import ExpandLess from '@mui/icons-material/ExpandLess';
 import ExpandMore from '@mui/icons-material/ExpandMore';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
@@ -370,6 +371,34 @@ const Layout = ({ children }) => {
               </Box>
             </List>
           </Collapse>
+          
+          {/* Carga de Excel - Solo para administradores */}
+          {isAdmin() && (
+            <Box sx={{ textDecoration: 'none' }} component={Link} to="/carga">
+              <ListItem 
+                button 
+                disableRipple
+                sx={getListItemStyle(location.pathname === '/carga')}
+              >
+                <ListItemIcon>
+                  <UploadFileIcon sx={{ 
+                    color: location.pathname === '/carga' ? '#fff' : '#CE0A0A',
+                    transition: 'all 0.2s ease-in-out'
+                  }} />
+                </ListItemIcon>
+                <ListItemText 
+                  primary="Carga de Datos" 
+                  primaryTypographyProps={{
+                    sx: { 
+                      color: location.pathname === '/carga' ? '#fff' : '#333',
+                      fontWeight: location.pathname === '/carga' ? 500 : 400,
+                      transition: 'all 0.2s ease-in-out'
+                    }
+                  }}
+                />
+              </ListItem>
+            </Box>
+          )}
         </List>
       </Drawer>
 
