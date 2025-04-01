@@ -8,6 +8,8 @@ import SearchIcon from '@mui/icons-material/Search';
 import UploadFileIcon from '@mui/icons-material/UploadFile';
 import ExpandLess from '@mui/icons-material/ExpandLess';
 import ExpandMore from '@mui/icons-material/ExpandMore';
+import SchoolIcon from '@mui/icons-material/School';
+import MenuBookIcon from '@mui/icons-material/MenuBook';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 
 const drawerWidth = 250;
@@ -18,6 +20,9 @@ const Layout = ({ children }) => {
   const [userData, setUserData] = useState(null);
   const [certificadosOpen, setCertificadosOpen] = useState(
     location.pathname.includes('/certificados/generar') || location.pathname.includes('/certificados/consultar')
+  );
+  const [cargaOpen, setCargaOpen] = useState(
+    location.pathname.includes('/carga/estudiantes') || location.pathname.includes('/carga/programas')
   );
 
   // Cargar datos del usuario al montar el componente
@@ -46,6 +51,10 @@ const Layout = ({ children }) => {
 
   const handleCertificadosClick = () => {
     setCertificadosOpen(!certificadosOpen);
+  };
+
+  const handleCargaClick = () => {
+    setCargaOpen(!cargaOpen);
   };
 
   // Función para determinar si el usuario es estudiante
@@ -372,17 +381,38 @@ const Layout = ({ children }) => {
             </List>
           </Collapse>
           
-          {/* Carga de Excel - Solo para administradores */}
+          {/* Carga de Excel con submenú - Solo para administradores */}
           {isAdmin() && (
-            <Box sx={{ textDecoration: 'none' }} component={Link} to="/carga">
+            <>
               <ListItem 
                 button 
+                onClick={handleCargaClick}
                 disableRipple
-                sx={getListItemStyle(location.pathname === '/carga')}
+                sx={{
+                  margin: '8px 16px',
+                  borderRadius: '8px',
+                  backgroundColor: (location.pathname.includes('/carga/estudiantes') || location.pathname.includes('/carga/programas') || location.pathname === '/carga') 
+                    ? 'rgba(206, 10, 10, 0.9)' 
+                    : 'transparent',
+                  color: (location.pathname.includes('/carga/estudiantes') || location.pathname.includes('/carga/programas') || location.pathname === '/carga') 
+                    ? '#fff' 
+                    : '#333',
+                  boxShadow: (location.pathname.includes('/carga/estudiantes') || location.pathname.includes('/carga/programas') || location.pathname === '/carga')
+                    ? '0 2px 4px rgba(206, 10, 10, 0.25)'
+                    : 'none',
+                  '&:hover': {
+                    backgroundColor: (location.pathname.includes('/carga/estudiantes') || location.pathname.includes('/carga/programas') || location.pathname === '/carga') 
+                      ? 'rgba(206, 10, 10, 0.9)' 
+                      : 'rgba(206, 10, 10, 0.1)',
+                  },
+                  transition: 'all 0.2s ease-in-out'
+                }}
               >
                 <ListItemIcon>
                   <UploadFileIcon sx={{ 
-                    color: location.pathname === '/carga' ? '#fff' : '#CE0A0A',
+                    color: (location.pathname.includes('/carga/estudiantes') || location.pathname.includes('/carga/programas') || location.pathname === '/carga') 
+                      ? '#fff' 
+                      : '#CE0A0A',
                     transition: 'all 0.2s ease-in-out'
                   }} />
                 </ListItemIcon>
@@ -390,14 +420,93 @@ const Layout = ({ children }) => {
                   primary="Carga de Datos" 
                   primaryTypographyProps={{
                     sx: { 
-                      color: location.pathname === '/carga' ? '#fff' : '#333',
-                      fontWeight: location.pathname === '/carga' ? 500 : 400,
+                      color: (location.pathname.includes('/carga/estudiantes') || location.pathname.includes('/carga/programas') || location.pathname === '/carga') 
+                        ? '#fff' 
+                        : '#333',
+                      fontWeight: (location.pathname.includes('/carga/estudiantes') || location.pathname.includes('/carga/programas') || location.pathname === '/carga') 
+                        ? 500 
+                        : 400,
                       transition: 'all 0.2s ease-in-out'
                     }
                   }}
                 />
+                {cargaOpen ? 
+                  <ExpandLess sx={{ 
+                    color: (location.pathname.includes('/carga/estudiantes') || location.pathname.includes('/carga/programas') || location.pathname === '/carga') 
+                      ? '#fff' 
+                      : '#555',
+                    transition: 'all 0.2s ease-in-out'
+                  }} /> : 
+                  <ExpandMore sx={{ 
+                    color: (location.pathname.includes('/carga/estudiantes') || location.pathname.includes('/carga/programas') || location.pathname === '/carga') 
+                      ? '#fff' 
+                      : '#555',
+                    transition: 'all 0.2s ease-in-out'
+                  }} />
+                }
               </ListItem>
-            </Box>
+              
+              {/* Submenú de Carga de Datos */}
+              <Collapse in={cargaOpen} timeout="auto" unmountOnExit>
+                <List component="div" disablePadding>
+                  {/* Información de Estudiantes */}
+                  <Box sx={{ textDecoration: 'none' }} component={Link} to="/carga/estudiantes">
+                    <ListItem 
+                      button 
+                      disableRipple
+                      sx={getSubItemStyle(location.pathname === '/carga/estudiantes')}
+                    >
+                      <ListItemIcon>
+                        <SchoolIcon sx={{ 
+                          color: location.pathname === '/carga/estudiantes' ? '#fff' : '#CE0A0A',
+                          fontSize: '1.2rem',
+                          transition: 'all 0.2s ease-in-out'
+                        }} />
+                      </ListItemIcon>
+                      <ListItemText 
+                        primary="Información de Estudiantes" 
+                        primaryTypographyProps={{
+                          sx: { 
+                            color: location.pathname === '/carga/estudiantes' ? '#fff' : '#555',
+                            fontSize: '0.9rem',
+                            fontWeight: location.pathname === '/carga/estudiantes' ? 500 : 400,
+                            transition: 'all 0.2s ease-in-out'
+                          }
+                        }}
+                      />
+                    </ListItem>
+                  </Box>
+                  
+                  {/* Programas, Materias y Notas */}
+                  <Box sx={{ textDecoration: 'none' }} component={Link} to="/carga/programas">
+                    <ListItem 
+                      button 
+                      disableRipple
+                      sx={getSubItemStyle(location.pathname === '/carga/programas')}
+                    >
+                      <ListItemIcon>
+                        <MenuBookIcon sx={{ 
+                          color: location.pathname === '/carga/programas' ? '#fff' : '#CE0A0A',
+                          fontSize: '1.2rem',
+                          transition: 'all 0.2s ease-in-out'
+                        }} />
+                      </ListItemIcon>
+                      <ListItemText 
+                        primary="Programas y Notas" 
+                        primaryTypographyProps={{
+                          sx: { 
+                            color: location.pathname === '/carga/programas' ? '#fff' : '#555',
+                            fontSize: '0.9rem',
+                            fontWeight: location.pathname === '/carga/programas' ? 500 : 400,
+                            transition: 'all 0.2s ease-in-out'
+                          }
+                        }}
+                      />
+                    </ListItem>
+                  </Box>
+                </List>
+              </Collapse>
+            </>
           )}
         </List>
       </Drawer>

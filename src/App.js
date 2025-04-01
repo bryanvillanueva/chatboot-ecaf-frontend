@@ -8,6 +8,8 @@ import Login from './pages/Login';
 import Generar from './certificados/generar';
 import Consultar from './certificados/consultar';
 import CargaExcel from './carga';
+import EstudiantesPage from './carga/estudiantes';
+import ProgramasPage from './carga/programas';
 
 import axios from 'axios';
 
@@ -154,6 +156,8 @@ const App = () => {
                   <Route path="/certificados/generar" element={<Generar pageTitle="Generar Certificado"/>} />
                   <Route path="/certificados/consultar" element={<Consultar pageTitle="Consultar Certificados"/>} />
                   <Route path="/carga" element={<CargaExcel pageTitle="Carga de Información"/>} />
+                  <Route path="/carga/estudiantes" element={<EstudiantesPage />} />
+                  <Route path="/carga/programas" element={<ProgramasPage />} />
                 </Routes>
               </Layout>
             ) : (

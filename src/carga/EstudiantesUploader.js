@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { 
   Box, 
   Typography, 
@@ -9,22 +9,22 @@ import {
   ListItem,
   ListItemText,
   Divider,
-  alpha,
   Card,
   ListItemIcon,
   Tooltip,
   IconButton,
-  Chip,
   Zoom,
-  Link
+  Fade,
+  CircularProgress,
+  useTheme
 } from '@mui/material';
 import { 
   CloudUpload as CloudUploadIcon, 
   Description as DescriptionIcon,
   DeleteOutline as DeleteIcon,
-  Check as CheckIcon,
   FileDownload as FileDownloadIcon,
-  UploadFile as UploadFileIcon
+  UploadFile as UploadFileIcon,
+  CheckCircleOutline as CheckCircleOutlineIcon
 } from '@mui/icons-material';
 import { uploadEstudiantes, getPlantilla } from './api';
 
@@ -32,7 +32,17 @@ const EstudiantesUploader = ({ setLoading, setResult }) => {
   const [file, setFile] = useState(null);
   const [dragging, setDragging] = useState(false);
   const [downloadingTemplate, setDownloadingTemplate] = useState(false);
+  const [uploadStatus, setUploadStatus] = useState('initial'); // 'initial', 'ready', 'processing', 'success'
   const fileInputRef = useRef(null);
+  const theme = useTheme();
+
+  useEffect(() => {
+    if (file) {
+      setUploadStatus('ready');
+    } else {
+      setUploadStatus('initial');
+    }
+  }, [file]);
 
   const handleFileChange = (e) => {
     const selectedFile = e.target.files[0];
@@ -84,6 +94,7 @@ const EstudiantesUploader = ({ setLoading, setResult }) => {
     }
 
     setLoading(true);
+    setUploadStatus('processing');
     
     try {
       // Usar la función API en lugar de implementación directa
@@ -98,8 +109,13 @@ Fallidos: ${response.resultados?.fallidos || 0}
 ${response.resultados?.errores?.length > 0 ? '\nErrores:\n' + response.resultados.errores.join('\n') : ''}`
       });
       
-      // Limpiar archivo después de cargar
-      setFile(null);
+      setUploadStatus('success');
+      
+      // Limpiar archivo después de un tiempo
+      setTimeout(() => {
+        setFile(null);
+        setUploadStatus('initial');
+      }, 3000);
     } catch (error) {
       console.error('Error al cargar archivo:', error);
       setResult({
@@ -107,6 +123,7 @@ ${response.resultados?.errores?.length > 0 ? '\nErrores:\n' + response.resultado
         message: 'Error al procesar el archivo',
         details: error.response?.data?.error || error.message
       });
+      setUploadStatus('initial');
     } finally {
       setLoading(false);
     }
@@ -137,203 +154,236 @@ ${response.resultados?.errores?.length > 0 ? '\nErrores:\n' + response.resultado
     }
   };
 
-  return (
-    <Box>
-      <Paper
-        elevation={0}
-        className={`dropzone-container ${dragging ? 'dragging' : ''}`}
-        sx={{
-          border: (theme) => `2px dashed ${dragging ? theme.palette.primary.main : theme.palette.divider}`,
-          borderRadius: 3,
-          p: 5,
-          textAlign: 'center',
-          backgroundColor: (theme) => dragging ? alpha(theme.palette.primary.main, 0.05) : alpha(theme.palette.background.default, 0.6),
-          cursor: 'pointer',
-          transition: 'all 0.3s ease',
-          boxShadow: dragging ? 3 : 0
-        }}
-        onDragOver={handleDragOver}
-        onDragLeave={handleDragLeave}
-        onDrop={handleDrop}
-        onClick={openFileSelector}
-      >
-        <Box
+  // Renderizar diferentes vistas basadas en el estado
+  const renderUploadArea = () => {
+    if (uploadStatus === 'initial') {
+      return (
+        <Paper
+          elevation={0}
+          className={`dropzone-container ${dragging ? 'dragging' : ''}`}
           sx={{
+            border: `2px dashed ${theme.palette.primary.main}`,
+            borderRadius: 3,
+            p: 3,
+            textAlign: 'center',
+            backgroundColor: 'transparent',
+            cursor: 'pointer',
+            transition: 'all 0.3s ease',
+            height: 300,
             display: 'flex',
             flexDirection: 'column',
-            alignItems: 'center',
             justifyContent: 'center',
-            minHeight: '200px',
+            background: dragging ? 'rgba(206, 10, 10, 0.03)' : 'transparent'
           }}
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
+          onClick={openFileSelector}
         >
-          <UploadFileIcon 
-            sx={{ 
-              fontSize: 80, 
-              color: (theme) => dragging ? theme.palette.primary.main : '#9e9e9e',
-              mb: 2,
-              transition: 'all 0.3s ease'
-            }} 
-          />
-          <Typography variant="h5" gutterBottom fontWeight="medium">
-            Cargar Información de Estudiantes
-          </Typography>
-          <Typography variant="body1" color="textSecondary" paragraph>
-            Arrastra y suelta un archivo Excel o haz clic para seleccionarlo
-          </Typography>
-          
-          <Input
-            type="file"
-            inputRef={fileInputRef}
-            sx={{ display: 'none' }}
-            inputProps={{ accept: '.xls,.xlsx' }}
-            onChange={handleFileChange}
-          />
-          
-          <Chip 
-            icon={<DescriptionIcon />} 
-            label="Excel (.xls, .xlsx)" 
-            variant="outlined" 
-            sx={{ mt: 1 }}
-          />
-        </Box>
-      </Paper>
-      
-      {file && (
-        <Zoom in={true}>
-          <Card sx={{ mt: 2, borderRadius: 2, boxShadow: 2 }}>
-            <List>
-              <ListItem
-                secondaryAction={
-                  <Tooltip title="Eliminar archivo">
-                    <IconButton edge="end" onClick={(e) => {
-                      e.stopPropagation();
-                      clearFile();
-                    }}>
-                      <DeleteIcon />
-                    </IconButton>
-                  </Tooltip>
+          <Box
+            sx={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <UploadFileIcon 
+              sx={{ 
+                fontSize: 80, 
+                color: dragging ? theme.palette.primary.main : theme.palette.grey[400],
+                mb: 2,
+                animation: dragging ? 'pulse 1.5s infinite' : 'none'
+              }} 
+            />
+            <Typography variant="h5" gutterBottom sx={{ fontWeight: 500 }}>
+              Cargar Información de Estudiantes
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 1, maxWidth: 400, mx: 'auto' }}>
+              Arrastra un archivo Excel o haz clic para seleccionarlo
+            </Typography>
+            
+            <Divider sx={{ width: '60%', my: 3 }} />
+            
+            <Input
+              type="file"
+              inputRef={fileInputRef}
+              sx={{ display: 'none' }}
+              inputProps={{ accept: '.xls,.xlsx' }}
+              onChange={handleFileChange}
+            />
+          </Box>
+        </Paper>
+      );
+    } else if (uploadStatus === 'ready') {
+      return (
+        <Fade in={true} timeout={500}>
+          <Box sx={{ height: 300, display: 'flex', flexDirection: 'column' }}>
+            <Card 
+              elevation={3} 
+              sx={{ 
+                borderRadius: 3, 
+                overflow: 'hidden', 
+                flex: 1,
+                mb: 2,
+                transition: 'transform 0.3s',
+                '&:hover': {
+                  transform: 'translateY(-5px)',
+                  boxShadow: '0 12px 20px rgba(0,0,0,0.1)'
                 }
-                className="file-list-item"
-              >
-                <ListItemIcon>
-                  <DescriptionIcon color="primary" />
-                </ListItemIcon>
-                <ListItemText 
-                  primary={file.name} 
-                  secondary={`${(file.size / 1024).toFixed(2)} KB`}
-                />
-                <Chip 
-                  icon={<CheckIcon />} 
-                  label="Listo para procesar" 
-                  color="success" 
-                  size="small" 
-                  variant="outlined"
-                  sx={{ mr: 2 }}
-                />
-              </ListItem>
-            </List>
-          </Card>
-        </Zoom>
-      )}
-      
-      <Box sx={{ display: 'flex', justifyContent: 'center', mt: 3, gap: 2 }}>
-        <Button 
-          variant="contained" 
-          size="large" 
-          onClick={handleUpload} 
-          disabled={!file}
-          startIcon={<CloudUploadIcon />}
-          className="upload-button"
-          sx={{
-            px: 4,
-            py: 1.2,
-            borderRadius: 2,
-            fontWeight: 'bold'
-          }}
-        >
-          Procesar Archivo
-        </Button>
-        
-        <Button
-          variant="outlined"
-          size="large"
-          onClick={handleDownloadTemplate}
-          disabled={downloadingTemplate}
-          startIcon={<FileDownloadIcon />}
-          sx={{
-            borderRadius: 2
-          }}
-        >
-          Descargar Plantilla
-        </Button>
-      </Box>
-      
-      <Card sx={{ mt: 4, borderRadius: 2, boxShadow: 2 }}>
-        <Box sx={{ 
-          p: 2,  
-          borderBottom: '1px solid', 
-          borderColor: 'divider',
-          bgcolor: (theme) => alpha(theme.palette.primary.main, 0.1),
-          display: 'flex',
-          alignItems: 'center'
-        }}>
-          <DescriptionIcon sx={{ mr: 1, color: 'primary.main' }} />
-          <Typography variant="h6" sx={{ fontSize: '1.1rem' }}>
-            Formato del Archivo
-          </Typography>
-        </Box>
-        
-        <Box sx={{ p: 2 }}>
-          <Typography variant="body2" paragraph>
-            El archivo Excel debe contener las siguientes columnas en el orden especificado:
-          </Typography>
-          
-          <List dense sx={{ bgcolor: 'background.paper', borderRadius: 1 }}>
-            {[
-              { name: 'tipo_documento', desc: '(CC, TI, CE, PA)' },
-              { name: 'numero_documento', desc: '' },
-              { name: 'nombres', desc: '' },
-              { name: 'apellidos', desc: '' },
-              { name: 'fecha_nacimiento', desc: '(YYYY-MM-DD)' },
-              { name: 'genero', desc: '(M, F, Otro)' },
-              { name: 'email', desc: '' },
-              { name: 'telefono', desc: '' },
-              { name: 'direccion', desc: '' },
-              { name: 'ciudad', desc: '' }
-            ].map((column, index) => (
-              <React.Fragment key={column.name}>
-                <ListItem disablePadding>
+              }}
+            >
+              <Box sx={{ 
+                p: 2, 
+                bgcolor: theme.palette.primary.main, 
+                color: 'white',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between'
+              }}>
+                <Typography variant="subtitle1" sx={{ fontWeight: 500, display: 'flex', alignItems: 'center' }}>
+                  <DescriptionIcon sx={{ mr: 1 }} />
+                  Archivo Listo para Procesar
+                </Typography>
+                <Tooltip title="Eliminar archivo">
+                  <IconButton size="small" onClick={clearFile} sx={{ color: 'white' }}>
+                    <DeleteIcon fontSize="small" />
+                  </IconButton>
+                </Tooltip>
+              </Box>
+              <List>
+                <ListItem>
+                  <ListItemIcon>
+                    <DescriptionIcon sx={{ color: '#4285F4' }} />
+                  </ListItemIcon>
                   <ListItemText 
-                    primary={
-                      <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                        <Typography 
-                          component="span" 
-                          variant="body2" 
-                          sx={{ fontWeight: 'bold', color: 'primary.main', width: '150px' }}
-                        >
-                          {column.name}
-                        </Typography>
-                        {column.desc && (
-                          <Typography component="span" variant="body2" color="text.secondary">
-                            {column.desc}
-                          </Typography>
-                        )}
-                      </Box>
-                    }
-                    sx={{ p: 1 }}
+                    primary={file.name} 
+                    secondary={`Tamaño: ${(file.size / 1024).toFixed(2)} KB`}
                   />
                 </ListItem>
-                {index < 9 && <Divider component="li" />}
-              </React.Fragment>
-            ))}
-          </List>
+              </List>
+              <Box sx={{ p: 2, bgcolor: 'rgba(0,0,0,0.02)' }}>
+                <Typography variant="body2" color="text.secondary" gutterBottom>
+                  Este archivo debe contener la siguiente información:
+                </Typography>
+                <Typography variant="body2" color="text.secondary" sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                  <span style={{ fontWeight: 'bold' }}>tipo_documento</span> • 
+                  <span style={{ fontWeight: 'bold' }}>numero_documento</span> • 
+                  <span style={{ fontWeight: 'bold' }}>nombres</span> • 
+                  <span style={{ fontWeight: 'bold' }}>apellidos</span> • 
+                  <span style={{ fontWeight: 'bold' }}>email</span>
+                </Typography>
+              </Box>
+            </Card>
+            
+            <Button
+              variant="contained"
+              color="primary"
+              fullWidth
+              size="large"
+              onClick={handleUpload}
+              startIcon={<CloudUploadIcon />}
+              sx={{
+                py: 1.5,
+                borderRadius: 2,
+                boxShadow: '0 4px 14px rgba(206, 10, 10, 0.4)',
+                transition: 'all 0.3s',
+                '&:hover': {
+                  transform: 'translateY(-2px)',
+                  boxShadow: '0 6px 20px rgba(206, 10, 10, 0.6)'
+                }
+              }}
+            >
+              Procesar Archivo
+            </Button>
+          </Box>
+        </Fade>
+      );
+    } else if (uploadStatus === 'processing') {
+      return (
+        <Fade in={true}>
+          <Box sx={{ 
+            height: 300, 
+            display: 'flex', 
+            flexDirection: 'column', 
+            justifyContent: 'center', 
+            alignItems: 'center',
+            backgroundColor: 'rgba(0,0,0,0.02)',
+            borderRadius: 3,
+            p: 4
+          }}>
+            <CircularProgress size={60} color="primary" sx={{ mb: 3 }} />
+            <Typography variant="h6" gutterBottom>
+              Procesando Archivo
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              Por favor espere mientras procesamos la información...
+            </Typography>
+          </Box>
+        </Fade>
+      );
+    } else if (uploadStatus === 'success') {
+      return (
+        <Fade in={true}>
+          <Box sx={{ 
+            height: 300, 
+            display: 'flex', 
+            flexDirection: 'column', 
+            justifyContent: 'center', 
+            alignItems: 'center',
+            backgroundColor: 'rgba(0,0,0,0.02)',
+            borderRadius: 3,
+            p: 4
+          }}>
+            <CheckCircleOutlineIcon color="success" sx={{ fontSize: 80, mb: 3 }} />
+            <Typography variant="h6" gutterBottom>
+              ¡Archivo Procesado Correctamente!
+            </Typography>
+            <Typography variant="body2" color="text.secondary" align="center">
+              La información ha sido cargada con éxito.
+              Volviendo al formulario de carga...
+            </Typography>
+          </Box>
+        </Fade>
+      );
+    }
+  };
+
+  return (
+    <Box sx={{ maxWidth: 900, mx: 'auto' }}>
+      {renderUploadArea()}
+      
+      {uploadStatus === 'initial' && (
+        <Box sx={{ display: 'flex', gap: 2, mt: 3, justifyContent: 'center' }}>
+          <Button
+            variant="outlined"
+            size="medium"
+            onClick={handleDownloadTemplate}
+            disabled={downloadingTemplate}
+            startIcon={<FileDownloadIcon />}
+            sx={{
+              borderRadius: 2,
+              px: 3
+            }}
+          >
+            Descargar Plantilla
+          </Button>
           
-          <Typography variant="body2" color="text.secondary" sx={{ mt: 2, fontSize: '0.85rem' }}>
-            <strong>Nota:</strong> Para una carga exitosa, asegúrese de que los campos tipo_documento, 
-            numero_documento, nombres, apellidos y email estén completos en todos los registros.
-          </Typography>
+          <Button
+            variant="contained"
+            size="medium"
+            onClick={openFileSelector}
+            startIcon={<UploadFileIcon />}
+            sx={{
+              borderRadius: 2,
+              px: 3,
+              boxShadow: '0 4px 10px rgba(206, 10, 10, 0.3)'
+            }}
+          >
+            Seleccionar Archivo
+          </Button>
         </Box>
-      </Card>
+      )}
     </Box>
   );
 };
