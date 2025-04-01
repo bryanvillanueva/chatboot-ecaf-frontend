@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Instrucciones para Carga de Programas, Materias y Notas</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        h1 {
+            color: #CE0A0A;
+            border-bottom: 2px solid #CE0A0A;
+            padding-bottom: 10px;
+        }
+        h2 {
+            color: #333;
+            margin-top: 30px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px 12px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        .required {
+            color: #CE0A0A;
+            font-weight: bold;
+        }
+        .warning {
+            background-color: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 10px 15px;
+            margin: 20px 0;
+        }
+        .tip {
+            background-color: #d4edda;
+            border-left: 4px solid #28a745;
+            padding: 10px 15px;
+            margin: 20px 0;
+        }
+        .note {
+            background-color: #e2e3e5;
+            border-left: 4px solid #6c757d;
+            padding: 10px 15px;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>Instrucciones para Carga de Programas, Materias y Notas</h1>
+    
+    <p>Este documento contiene instrucciones detalladas sobre cómo completar la plantilla de Excel para cargar información de programas académicos, materias y notas de estudiantes al sistema.</p>
+    
+    <div class="warning">
+        <strong>Importante:</strong> Los estudiantes deben existir previamente en la base de datos para poder cargar sus notas. Si necesita registrar nuevos estudiantes, utilice primero la opción "Información de Estudiantes".
+    </div>
+    
+    <h2>Formato de la Plantilla</h2>
+    
+    <p>La plantilla contiene los siguientes campos. Los campos marcados con <span class="required">*</span> son obligatorios:</p>
+    
+    <table>
+        <tr>
+            <th>Campo</th>
+            <th>Descripción</th>
+            <th>Formato</th>
+            <th>Requerido</th>
+        </tr>
+        <tr>
+            <td>tipo_documento</td>
+            <td>Tipo de documento de identidad del estudiante</td>
+            <td>CC (Cédula de Ciudadanía), TI (Tarjeta de Identidad), CE (Cédula de Extranjería), PA (Pasaporte)</td>
+            <td class="required">Sí</td>
+        </tr>
+        <tr>
+            <td>numero_documento</td>
+            <td>Número de documento de identidad</td>
+            <td>Solo números y letras, sin espacios, guiones o puntos</td>
+            <td class="required">Sí</td>
+        </tr>
+        <tr>
+            <td>nombre_programa</td>
+            <td>Nombre del programa académico</td>
+            <td>Texto</td>
+            <td class="required">Sí</td>
+        </tr>
+        <tr>
+            <td>tipo_programa</td>
+            <td>Tipo de programa académico</td>
+            <td>Técnica, Tecnológica, Profesional, Especialización, Maestría, Doctorado</td>
+            <td class="required">Sí</td>
+        </tr>
+        <tr>
+            <td>estado_programa</td>
+            <td>Estado actual del estudiante en el programa</td>
+            <td>En curso, Cancelado, Finalizado, Suspendido</td>
+            <td class="required">Sí</td>
+        </tr>
+        <tr>
+            <td>materia</td>
+            <td>Nombre de la materia o asignatura</td>
+            <td>Texto</td>
+            <td class="required">Sí</td>
+        </tr>
+        <tr>
+            <td>descripcion_materia</td>
+            <td>Descripción breve de la materia</td>
+            <td>Texto</td>
+            <td>No</td>
+        </tr>
+        <tr>
+            <td>nota</td>
+            <td>Calificación obtenida por el estudiante</td>
+            <td>Número decimal entre 0.0 y 5.0</td>
+            <td class="required">Sí</td>
+        </tr>
+        <tr>
+            <td>periodo</td>
+            <td>Periodo académico</td>
+            <td>YYYY-N (Ej: 2024-1, 2024-2)</td>
+            <td class="required">Sí</td>
+        </tr>
+    </table>
+    
+    <h2>Instrucciones de Llenado</h2>
+    
+    <ol>
+        <li>No elimine la fila de encabezados (primera fila).</li>
+        <li>Llene todos los campos obligatorios para cada registro.</li>
+        <li>Si un campo no es obligatorio y no dispone de la información, puede dejarlo en blanco.</li>
+        <li>Respete el formato indicado para cada campo, especialmente los valores predefinidos como tipos de documento, tipos de programa y estados.</li>
+        <li>Las notas deben estar en escala de 0.0 a 5.0, donde 5.0 es la máxima calificación.</li>
+        <li>El periodo debe seguir el formato YYYY-N, donde YYYY es el año y N es el número de periodo (1, 2, 3, etc.).</li>
+    </ol>
+    
+    <div class="note">
+        <strong>Reglas importantes:</strong>
+        <ul>
+            <li>Si un programa o materia no existe en el sistema, se creará automáticamente.</li>
+            <li>Si ya existe un registro con la misma combinación de estudiante, programa, materia y periodo, se actualizará la nota.</li>
+            <li>Si un estudiante no existe en el sistema, el registro será rechazado. Asegúrese de que todos los estudiantes estén previamente registrados.</li>
+        </ul>
+    </div>
+    
+    <h2>Proceso de Carga</h2>
+    
+    <ol>
+        <li>Complete la plantilla siguiendo las instrucciones anteriores.</li>
+        <li>Guarde el archivo en formato Excel 97-2003 (.xls).</li>
+        <li>Acceda al sistema y seleccione la opción de "Carga de Programas, Materias y Notas".</li>
+        <li>Arrastre el archivo o haga clic para seleccionarlo.</li>
+        <li>Presione el botón "Procesar Archivo".</li>
+        <li>El sistema validará y procesará la información.</li>
+        <li>Se mostrará un informe con los resultados de la carga.</li>
+    </ol>
+    
+    <div class="tip">
+        <strong>Recomendación:</strong> Para facilitar la carga de múltiples materias para un mismo estudiante, puede duplicar filas y cambiar solo los campos necesarios.
+    </div>
+    
+    <h2>Ejemplos</h2>
+    
+    <p>A continuación, se muestran ejemplos de registros correctamente formateados:</p>
+    
+    <ul>
+        <li><strong>Ejemplo 1:</strong> CC, 10012345678, Ingeniería de Sistemas, Profesional, En curso, Programación I, Fundamentos de programación, 4.5, 2024-1</li>
+        <li><strong>Ejemplo 2:</strong> CC, 10012345678, Ingeniería de Sistemas, Profesional, En curso, Matemáticas, Cálculo diferencial, 3.8, 2024-1</li>
+        <li><strong>Ejemplo 3:</strong> TI, 98765432109, Tecnología en Desarrollo, Tecnológica, En curso, Base de Datos, Fundamentos de bases de datos, 4.2, 2024-1</li>
+    </ul>
+    
+    <div class="warning">
+        <strong>Nota:</strong> Si el sistema encuentra errores en algún registro, mostrará un informe detallado. Corrija los errores y vuelva a cargar solo los registros que fallaron.
+    </div>
+    
+    <div class="tip">
+        <strong>Ayuda:</strong> Si tiene dudas o problemas durante el proceso de carga, contacte al administrador del sistema.
+    </div>
+</body>
+</html>

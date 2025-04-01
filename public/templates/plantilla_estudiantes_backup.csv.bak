@@ -1,0 +1,3 @@
+tipo_documento,numero_documento,nombres,apellidos,fecha_nacimiento,genero,email,telefono,direccion,ciudad
+CC,10012345678,Juan,Pérez,1990-01-15,M,juan.perez@ejemplo.com,3001234567,Calle 123 #45-67,Bogotá
+TI,98765432109,María,Gómez,2000-05-20,F,maria.gomez@ejemplo.com,3109876543,Carrera 54 #32-10,Medellín

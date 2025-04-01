@@ -1,0 +1,4 @@
+tipo_documento,numero_documento,nombre_programa,tipo_programa,estado_programa,materia,descripcion_materia,nota,periodo
+CC,10012345678,Ingeniería de Sistemas,Profesional,En curso,Programación I,Fundamentos de programación,4.5,2024-1
+CC,10012345678,Ingeniería de Sistemas,Profesional,En curso,Matemáticas,Cálculo diferencial,3.8,2024-1
+TI,98765432109,Tecnología en Desarrollo,Tecnológica,En curso,Base de Datos,Fundamentos de bases de datos,4.2,2024-1
