@@ -10,6 +10,9 @@ import Consultar from './certificados/consultar';
 import CargaExcel from './carga';
 import EstudiantesPage from './carga/estudiantes';
 import ProgramasPage from './carga/programas';
+// Asegúrate de crear estos componentes en la carpeta "informacion"
+import InfoEstudiantes from './informacion/InfoEstudiantes';
+import InfoProgramas from './informacion/InfoProgramas';
 
 import axios from 'axios';
 
@@ -109,9 +112,6 @@ const App = () => {
     
     // Actualizar estado
     setIsAuthenticated(false);
-    
-    // Opcional: Notificar al servidor sobre el cierre de sesión
-    // axios.post('https://webhook-ecaf-production.up.railway.app/api/logout');
   };
   
   // Si está cargando, mostrar un indicador o página de carga
@@ -155,6 +155,10 @@ const App = () => {
                   <Route path="/chat" element={<Chat pageTitle="Chat"/>} />
                   <Route path="/certificados/generar" element={<Generar pageTitle="Generar Certificado"/>} />
                   <Route path="/certificados/consultar" element={<Consultar pageTitle="Consultar Certificados"/>} />
+                  {/* Rutas para ver información */}
+                  <Route path="/informacion/estudiantes" element={<InfoEstudiantes />} />
+                  <Route path="/informacion/programas" element={<InfoProgramas />} />
+                  {/* Rutas para cargar datos */}
                   <Route path="/carga" element={<CargaExcel pageTitle="Carga de Información"/>} />
                   <Route path="/carga/estudiantes" element={<EstudiantesPage />} />
                   <Route path="/carga/programas" element={<ProgramasPage />} />

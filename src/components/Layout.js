@@ -156,6 +156,10 @@ const Layout = ({ children }) => {
   const canGenerateCertificates = () => {
     return true; // Todos los usuarios, incluidos estudiantes, pueden generar certificados
   };
+// Funcion para submenu de informacion de estudiantes y programas
+  const [infoOpen, setInfoOpen] = useState(
+    location.pathname.includes('/informacion/estudiantes') || location.pathname.includes('/informacion/programas')
+  );
 
   return (
     <Box 
@@ -380,6 +384,100 @@ const Layout = ({ children }) => {
               </Box>
             </List>
           </Collapse>
+          {/* Información con submenú - Visible solo para administradores y profesores */}
+{(isAdmin() || isTeacher()) && (
+  <>
+    <ListItem 
+      button 
+      onClick={() => setInfoOpen(prev => !prev)}
+      disableRipple
+      sx={{
+        margin: '8px 16px',
+        borderRadius: '8px',
+        backgroundColor: (location.pathname === '/informacion/estudiantes' || location.pathname === '/informacion/programas') 
+          ? 'rgba(206, 10, 10, 0.9)' 
+          : 'transparent',
+        color: (location.pathname === '/informacion/estudiantes' || location.pathname === '/informacion/programas') 
+          ? '#fff' 
+          : '#333',
+        boxShadow: (location.pathname === '/informacion/estudiantes' || location.pathname === '/informacion/programas')
+          ? '0 2px 4px rgba(206, 10, 10, 0.25)'
+          : 'none',
+        '&:hover': {
+          backgroundColor: (location.pathname === '/informacion/estudiantes' || location.pathname === '/informacion/programas') 
+            ? 'rgba(206, 10, 10, 0.9)' 
+            : 'rgba(206, 10, 10, 0.1)',
+        },
+        transition: 'all 0.2s ease-in-out'
+      }}
+    >
+      <ListItemIcon>
+        <MenuBookIcon sx={{
+          color: (location.pathname === '/informacion/estudiantes' || location.pathname === '/informacion/programas') 
+            ? '#fff' 
+            : '#CE0A0A',
+          transition: 'all 0.2s ease-in-out'
+        }} />
+      </ListItemIcon>
+      <ListItemText 
+        primary="Información" 
+        primaryTypographyProps={{
+          sx: { 
+            color: (location.pathname === '/informacion/estudiantes' || location.pathname === '/informacion/programas') 
+              ? '#fff' 
+              : '#333',
+            fontWeight: (location.pathname === '/informacion/estudiantes' || location.pathname === '/informacion/programas') 
+              ? 500 
+              : 400,
+            transition: 'all 0.2s ease-in-out'
+          }
+        }}
+      />
+      {infoOpen ? <ExpandLess sx={{ color: '#555' }} /> : <ExpandMore sx={{ color: '#555' }} />}
+    </ListItem>
+
+    <Collapse in={infoOpen} timeout="auto" unmountOnExit>
+      <List component="div" disablePadding>
+        {/* Ver estudiantes */}
+        <Box sx={{ textDecoration: 'none' }} component={Link} to="/informacion/estudiantes">
+          <ListItem button disableRipple sx={getSubItemStyle(location.pathname === '/informacion/estudiantes')}>
+            <ListItemIcon>
+              <SchoolIcon sx={{ color: location.pathname === '/informacion/estudiantes' ? '#fff' : '#CE0A0A', fontSize: '1.2rem' }} />
+            </ListItemIcon>
+            <ListItemText 
+              primary="Ver Estudiantes" 
+              primaryTypographyProps={{ 
+                sx: { 
+                  fontSize: '0.9rem',
+                  color: location.pathname === '/informacion/estudiantes' ? '#fff' : '#555'
+                } 
+              }} 
+            />
+          </ListItem>
+        </Box>
+
+        {/* Ver Programas y Notas */}
+        <Box sx={{ textDecoration: 'none' }} component={Link} to="/informacion/programas">
+          <ListItem button disableRipple sx={getSubItemStyle(location.pathname === '/informacion/programas')}>
+            <ListItemIcon>
+              <MenuBookIcon sx={{ color: location.pathname === '/informacion/programas' ? '#fff' : '#CE0A0A', fontSize: '1.2rem' }} />
+            </ListItemIcon>
+            <ListItemText 
+              primary="Ver Programas y Notas" 
+              primaryTypographyProps={{ 
+                sx: { 
+                  fontSize: '0.9rem',
+                  color: location.pathname === '/informacion/programas' ? '#fff' : '#555'
+                } 
+              }} 
+            />
+          </ListItem>
+        </Box>
+      </List>
+    </Collapse>
+  </>
+)}
+
           
           {/* Carga de Excel con submenú - Solo para administradores */}
           {isAdmin() && (
