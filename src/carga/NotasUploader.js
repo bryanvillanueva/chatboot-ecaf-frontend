@@ -56,7 +56,10 @@ const NotasUploader = ({ setLoading, setResult }) => {
 
   const validateAndSetFile = (selectedFile) => {
     // Validar que sea un archivo Excel
-    const validTypes = ['application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'];
+    const validTypes = [
+      'application/vnd.ms-excel',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    ];
     if (!validTypes.includes(selectedFile.type)) {
       setResult({
         success: false,
@@ -140,21 +143,8 @@ ${response.resultados?.errores?.length > 0 ? '\nErrores:\n' + response.resultado
     setFile(null);
   };
 
-  const handleDownloadTemplate = async () => {
-    setDownloadingTemplate(true);
-    try {
-      // Usar la función de API para descargar plantilla
-      await getPlantilla('notas');
-      setDownloadingTemplate(false);
-    } catch (error) {
-      console.error('Error al descargar plantilla:', error);
-      setResult({
-        success: false,
-        message: 'Error al descargar la plantilla',
-        details: error.message
-      });
-      setDownloadingTemplate(false);
-    }
+  const handleDownloadTemplate = () => {
+    window.open("https://ecafescuela.com/plantilla_excel/Plantilla_Programas.xlsx", "_blank");
   };
 
   // Renderizar diferentes vistas basadas en el estado
@@ -220,7 +210,7 @@ ${response.resultados?.errores?.length > 0 ? '\nErrores:\n' + response.resultado
                 }} 
               />
               <Typography variant="h5" gutterBottom sx={{ fontWeight: 500 }}>
-                Cargar Programas, Materias y Notas
+                Cargar Información de Programas, Módulos, Asignaturas y Notas
               </Typography>
               <Typography variant="body2" color="text.secondary" sx={{ mt: 1, maxWidth: 400, mx: 'auto' }}>
                 Arrastra un archivo Excel o haz clic para seleccionarlo
@@ -308,15 +298,24 @@ ${response.resultados?.errores?.length > 0 ? '\nErrores:\n' + response.resultado
                 <Typography variant="body2" color="text.secondary" gutterBottom>
                   Este archivo debe contener la siguiente información:
                 </Typography>
-                <Typography variant="body2" color="text.secondary" sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                <Typography 
+                  variant="body2" 
+                  color="text.secondary" 
+                  sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}
+                >
                   <span style={{ fontWeight: 'bold' }}>tipo_documento</span> • 
                   <span style={{ fontWeight: 'bold' }}>numero_documento</span> • 
                   <span style={{ fontWeight: 'bold' }}>nombre_programa</span> • 
-                  <span style={{ fontWeight: 'bold' }}>tipo_programa</span> • 
-                  <span style={{ fontWeight: 'bold' }}>estado_programa</span> • 
-                  <span style={{ fontWeight: 'bold' }}>materia</span> • 
-                  <span style={{ fontWeight: 'bold' }}>nota</span> • 
-                  <span style={{ fontWeight: 'bold' }}>periodo</span>
+                  <span style={{ fontWeight: 'bold' }}>Incluye modulos?</span> • 
+                  <span style={{ fontWeight: 'bold' }}>Fecha de Inicio</span> • 
+                  <span style={{ fontWeight: 'bold' }}>Fecha de finalizacion</span> • 
+                  <span style={{ fontWeight: 'bold' }}>Estado</span> • 
+                  <span style={{ fontWeight: 'bold' }}>tipo de formacion</span> • 
+                  <span style={{ fontWeight: 'bold' }}>Nombre del modulo</span> • 
+                  <span style={{ fontWeight: 'bold' }}>fecha de Inicio Modulo</span> • 
+                  <span style={{ fontWeight: 'bold' }}>Fecha de finalizacion Modulo</span> • 
+                  <span style={{ fontWeight: 'bold' }}>Nombre de la Asignatura</span> • 
+                  <span style={{ fontWeight: 'bold' }}>Nota Final</span>
                 </Typography>
               </Box>
             </Card>
