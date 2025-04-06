@@ -38,7 +38,7 @@ const InfoEstudiantes = () => {
     message: '',
     severity: 'error'
   });
-  // Estados para el modal de detalles (programas, materias y notas)
+  // Estados para el modal de detalles (programas, módulos, asignaturas y notas)
   const [openModal, setOpenModal] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [studentDetails, setStudentDetails] = useState([]);
@@ -93,8 +93,8 @@ const InfoEstudiantes = () => {
   useEffect(() => {
     if (selectedStudent && openModal) {
       setLoadingDetails(true);
-      // Se utiliza el número de documento del estudiante para obtener los detalles.
-      axios.get(`https://webhook-ecaf-production.up.railway.app/api/estudiantes/${selectedStudent.numero_documento}/notas`)
+      // Se utiliza el número de documento del estudiante para obtener los detalles con el nuevo endpoint.
+      axios.get(`https://webhook-ecaf-production.up.railway.app/api/estudiantes/${selectedStudent.numero_documento}/asignaciones`)
         .then(res => {
           setStudentDetails(res.data);
           setLoadingDetails(false);
@@ -186,7 +186,7 @@ const InfoEstudiantes = () => {
                                 '&:hover': { bgcolor: '#b00909' }
                               }}
                             >
-                              Ver Programas
+                              Ver Detalles
                             </Button>
                           </TableCell>
                         </TableRow>
@@ -221,7 +221,7 @@ const InfoEstudiantes = () => {
           </IconButton>
         }
       />
-      {/* Modal para ver detalles (Programas, Materias y Notas) */}
+      {/* Modal para ver detalles (Programas, Módulos, Asignaturas y Notas) */}
       <Dialog
         open={openModal}
         onClose={handleCloseModal}
@@ -246,25 +246,25 @@ const InfoEstudiantes = () => {
           ) : (
             <>
               <Typography variant="subtitle1" sx={{ mb: 2, fontWeight: 'bold', color: '#CE0A0A' }}>
-                Programas, Materias y Notas para: {selectedStudent && `${selectedStudent.nombres} ${selectedStudent.apellidos}`}
+                Asignaciones para: {selectedStudent && `${selectedStudent.nombres} ${selectedStudent.apellidos}`}
               </Typography>
               <TableContainer>
                 <Table>
                   <TableHead>
                     <TableRow sx={{ backgroundColor: 'rgba(206, 10, 10, 0.05)' }}>
                       <TableCell sx={{ fontWeight: 'bold' }}>Programa</TableCell>
-                      <TableCell sx={{ fontWeight: 'bold' }}>Materia</TableCell>
-                      <TableCell sx={{ fontWeight: 'bold' }}>Nota</TableCell>
-                      <TableCell sx={{ fontWeight: 'bold' }}>Periodo</TableCell>
+                      <TableCell sx={{ fontWeight: 'bold' }}>Módulo</TableCell>
+                      <TableCell sx={{ fontWeight: 'bold' }}>Asignatura</TableCell>
+                      <TableCell sx={{ fontWeight: 'bold' }}>Nota Final</TableCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
                     {studentDetails.map((item, index) => (
                       <TableRow key={index} hover>
-                        <TableCell>{item.programa}</TableCell>
-                        <TableCell>{item.materia}</TableCell>
-                        <TableCell>{item.nota}</TableCell>
-                        <TableCell>{item.periodo}</TableCell>
+                        <TableCell>{item.Nombre_programa}</TableCell>
+                        <TableCell>{item.Nombre_modulo || '-'}</TableCell>
+                        <TableCell>{item.Nombre_asignatura}</TableCell>
+                        <TableCell>{item.Nota_Final}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>

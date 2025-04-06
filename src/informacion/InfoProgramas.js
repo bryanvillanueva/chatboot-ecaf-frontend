@@ -39,20 +39,20 @@ const InfoProgramas = () => {
     severity: 'error'
   });
 
-  // Estado para expandir/collapse de materias en cada programa
+  // Estado para expandir/collapse de asignaturas en cada programa
   const [expandedPrograms, setExpandedPrograms] = useState({});
-  const [materiasByProgram, setMateriasByProgram] = useState({});
+  const [asignaturasByProgram, setAsignaturasByProgram] = useState({});
 
   // Modal para estudiantes a nivel de programa (agrupados)
   const [openProgramModal, setOpenProgramModal] = useState(false);
   const [selectedProgram, setSelectedProgram] = useState(null);
   const [programStudents, setProgramStudents] = useState([]);
 
-  // Modal para estudiantes de una materia específica (con notas y periodos)
-  const [openMateriaModal, setOpenMateriaModal] = useState(false);
-  const [selectedMateria, setSelectedMateria] = useState(null);
-  const [materiaStudents, setMateriaStudents] = useState([]);
-  const [loadingMateriaStudents, setLoadingMateriaStudents] = useState(false);
+  // Modal para estudiantes de una asignatura específica (con notas)
+  const [openAsignaturaModal, setOpenAsignaturaModal] = useState(false);
+  const [selectedAsignatura, setSelectedAsignatura] = useState(null);
+  const [asignaturaStudents, setAsignaturaStudents] = useState([]);
+  const [loadingAsignaturaStudents, setLoadingAsignaturaStudents] = useState(false);
 
   useEffect(() => {
     fetchProgramas();
@@ -83,20 +83,20 @@ const InfoProgramas = () => {
 
   const handleCloseSnackbar = () => setSnackbar({ ...snackbar, open: false });
 
-  // Toggle expand/collapse para materias de un programa
+  // Toggle expand/collapse para asignaturas de un programa
   const toggleExpandProgram = async (programId) => {
     setExpandedPrograms(prev => ({
       ...prev,
       [programId]: !prev[programId]
     }));
-    // Si se expande y no se han cargado las materias, hacer la consulta
-    if (!expandedPrograms[programId] && !materiasByProgram[programId]) {
+    // Si se expande y no se han cargado las asignaturas, hacer la consulta
+    if (!expandedPrograms[programId] && !asignaturasByProgram[programId]) {
       try {
-        const res = await axios.get(`https://webhook-ecaf-production.up.railway.app/api/programas/${programId}/materias`);
-        setMateriasByProgram(prev => ({ ...prev, [programId]: res.data }));
+        const res = await axios.get(`https://webhook-ecaf-production.up.railway.app/api/programas/${programId}/asignaturas`);
+        setAsignaturasByProgram(prev => ({ ...prev, [programId]: res.data }));
       } catch (err) {
-        console.error('❌ Error al obtener materias para el programa:', err);
-        setSnackbar({ open: true, message: 'Error al cargar materias', severity: 'error' });
+        console.error('❌ Error al obtener asignaturas para el programa:', err);
+        setSnackbar({ open: true, message: 'Error al cargar asignaturas', severity: 'error' });
       }
     }
   };
@@ -105,17 +105,17 @@ const InfoProgramas = () => {
   const handleOpenProgramModal = (program) => {
     setSelectedProgram(program);
     setOpenProgramModal(true);
-    axios.get(`https://webhook-ecaf-production.up.railway.app/api/programas/${program.id_programa}/estudiantes`)
+    axios.get(`https://webhook-ecaf-production.up.railway.app/api/programas/${program.Id_Programa}/estudiantes`)
       .then(res => {
-        // Agrupar estudiantes: que cada estudiante aparezca una sola vez y listar materias asociadas
+        // Agrupar estudiantes: cada estudiante aparece una sola vez, y se listan las asignaturas asociadas
         const agrupados = {};
         res.data.forEach(item => {
           const key = item.numero_documento;
           if (!agrupados[key]) {
-            agrupados[key] = { ...item, materias: [] };
+            agrupados[key] = { ...item, asignaturas: [] };
           }
-          if (item.materia && !agrupados[key].materias.includes(item.materia)) {
-            agrupados[key].materias.push(item.materia);
+          if (item.Nombre_asignatura && !agrupados[key].asignaturas.includes(item.Nombre_asignatura)) {
+            agrupados[key].asignaturas.push(item.Nombre_asignatura);
           }
         });
         setProgramStudents(Object.values(agrupados));
@@ -132,27 +132,27 @@ const InfoProgramas = () => {
     setProgramStudents([]);
   };
 
-  // Modal para estudiantes de una materia específica (con notas y periodos)
-  const handleOpenMateriaModal = (materia) => {
-    setSelectedMateria(materia);
-    setOpenMateriaModal(true);
-    setLoadingMateriaStudents(true);
-    axios.get(`https://webhook-ecaf-production.up.railway.app/api/materias/${materia.id_materia}/estudiantes`)
+  // Modal para estudiantes de una asignatura específica
+  const handleOpenAsignaturaModal = (asignatura) => {
+    setSelectedAsignatura(asignatura);
+    setOpenAsignaturaModal(true);
+    setLoadingAsignaturaStudents(true);
+    axios.get(`https://webhook-ecaf-production.up.railway.app/api/asignaturas/${asignatura.Id_Asignatura}/estudiantes`)
       .then(res => {
-        setMateriaStudents(res.data);
-        setLoadingMateriaStudents(false);
+        setAsignaturaStudents(res.data);
+        setLoadingAsignaturaStudents(false);
       })
       .catch(err => {
-        console.error('❌ Error al obtener estudiantes de la materia:', err);
-        setSnackbar({ open: true, message: 'Error al cargar estudiantes de la materia', severity: 'error' });
-        setLoadingMateriaStudents(false);
+        console.error('❌ Error al obtener estudiantes de la asignatura:', err);
+        setSnackbar({ open: true, message: 'Error al cargar estudiantes de la asignatura', severity: 'error' });
+        setLoadingAsignaturaStudents(false);
       });
   };
 
-  const handleCloseMateriaModal = () => {
-    setOpenMateriaModal(false);
-    setSelectedMateria(null);
-    setMateriaStudents([]);
+  const handleCloseAsignaturaModal = () => {
+    setOpenAsignaturaModal(false);
+    setSelectedAsignatura(null);
+    setAsignaturaStudents([]);
   };
 
   return (
@@ -162,7 +162,7 @@ const InfoProgramas = () => {
       <Container maxWidth="xl">
         <Paper sx={{ p: 4, borderRadius: 2, boxShadow: '0 4px 20px rgba(0,0,0,0.05)' }}>
           <Typography variant="h5" sx={{ color: '#CE0A0A', fontWeight: 600, mb: 3 }}>
-           Programas Académicos
+            Programas Académicos
           </Typography>
           {loading ? (
             <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
@@ -177,9 +177,9 @@ const InfoProgramas = () => {
                   <TableRow sx={{ backgroundColor: 'rgba(206, 10, 10, 0.05)' }}>
                     <TableCell sx={{ fontWeight: 'bold' }} />
                     <TableCell sx={{ fontWeight: 'bold' }}>Nombre</TableCell>
-                    <TableCell sx={{ fontWeight: 'bold' }}>Tipo</TableCell>
+                    <TableCell sx={{ fontWeight: 'bold' }}>Incluye Módulos</TableCell>
                     <TableCell sx={{ fontWeight: 'bold' }}>Estado</TableCell>
-                    <TableCell sx={{ fontWeight: 'bold' }}>Descripción</TableCell>
+                    <TableCell sx={{ fontWeight: 'bold' }}>Fechas</TableCell>
                     <TableCell sx={{ fontWeight: 'bold' }}>Acciones</TableCell>
                   </TableRow>
                 </TableHead>
@@ -187,16 +187,18 @@ const InfoProgramas = () => {
                   {programas
                     .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
                     .map((prog) => [
-                      <TableRow key={`prog-${prog.id_programa}`} hover>
+                      <TableRow key={`prog-${prog.Id_Programa}`} hover>
                         <TableCell>
-                          <IconButton size="small" onClick={() => toggleExpandProgram(prog.id_programa)}>
-                            {expandedPrograms[prog.id_programa] ? <KeyboardArrowUp /> : <KeyboardArrowDown />}
+                          <IconButton size="small" onClick={() => toggleExpandProgram(prog.Id_Programa)}>
+                            {expandedPrograms[prog.Id_Programa] ? <KeyboardArrowUp /> : <KeyboardArrowDown />}
                           </IconButton>
                         </TableCell>
-                        <TableCell>{prog.nombre}</TableCell>
-                        <TableCell>{prog.tipo}</TableCell>
-                        <TableCell>{prog.estado}</TableCell>
-                        <TableCell>{prog.descripcion}</TableCell>
+                        <TableCell>{prog.Nombre_programa}</TableCell>
+                        <TableCell>{prog.Incluye_Modulos ? 'Sí' : 'No'}</TableCell>
+                        <TableCell>{prog.Estado}</TableCell>
+                        <TableCell>
+                          {prog.Fecha_Inicio_programa ? new Date(prog.Fecha_Inicio_programa).toLocaleDateString() : '-'} - {prog.Fecha_Fin_programa ? new Date(prog.Fecha_Fin_programa).toLocaleDateString() : '-'}
+                        </TableCell>
                         <TableCell>
                           <Button
                             variant="contained"
@@ -208,32 +210,32 @@ const InfoProgramas = () => {
                           </Button>
                         </TableCell>
                       </TableRow>,
-                      <TableRow key={`collapse-${prog.id_programa}`}>
+                      <TableRow key={`collapse-${prog.Id_Programa}`}>
                         <TableCell style={{ paddingBottom: 0, paddingTop: 0 }} colSpan={6}>
-                          <Collapse in={expandedPrograms[prog.id_programa]} timeout="auto" unmountOnExit>
+                          <Collapse in={expandedPrograms[prog.Id_Programa]} timeout="auto" unmountOnExit>
                             <Box sx={{ margin: 1 }}>
                               <Typography variant="subtitle1" sx={{ mb: 1, color: '#CE0A0A', fontWeight: 'bold' }}>
-                                Materias
+                                Asignaturas
                               </Typography>
-                              {materiasByProgram[prog.id_programa] && materiasByProgram[prog.id_programa].length > 0 ? (
+                              {asignaturasByProgram[prog.Id_Programa] && asignaturasByProgram[prog.Id_Programa].length > 0 ? (
                                 <Table size="small">
                                   <TableHead>
                                     <TableRow sx={{ backgroundColor: 'rgba(206, 10, 10, 0.05)' }}>
                                       <TableCell sx={{ fontWeight: 'bold' }}>Nombre</TableCell>
-                                      <TableCell sx={{ fontWeight: 'bold' }}>Descripción</TableCell>
+                                      <TableCell sx={{ fontWeight: 'bold' }}>Módulo</TableCell>
                                       <TableCell sx={{ fontWeight: 'bold' }}>Acciones</TableCell>
                                     </TableRow>
                                   </TableHead>
                                   <TableBody>
-                                    {materiasByProgram[prog.id_programa].map((mat) => (
-                                      <TableRow key={mat.id_materia} hover>
-                                        <TableCell>{mat.nombre}</TableCell>
-                                        <TableCell>{mat.descripcion}</TableCell>
+                                    {asignaturasByProgram[prog.Id_Programa].map((asig) => (
+                                      <TableRow key={asig.Id_Asignatura} hover>
+                                        <TableCell>{asig.Nombre_asignatura}</TableCell>
+                                        <TableCell>{asig.Nombre_modulo || '-'}</TableCell>
                                         <TableCell>
                                           <Button
                                             variant="outlined"
                                             size="small"
-                                            onClick={() => handleOpenMateriaModal(mat)}
+                                            onClick={() => handleOpenAsignaturaModal(asig)}
                                             sx={{
                                               color: '#CE0A0A',
                                               borderColor: '#CE0A0A',
@@ -248,7 +250,7 @@ const InfoProgramas = () => {
                                   </TableBody>
                                 </Table>
                               ) : (
-                                <Alert severity="info">No se encontraron materias para este programa.</Alert>
+                                <Alert severity="info">No se encontraron asignaturas para este programa.</Alert>
                               )}
                             </Box>
                           </Collapse>
@@ -284,11 +286,11 @@ const InfoProgramas = () => {
           </IconButton>
         }
       />
-      {/* Modal para estudiantes del programa (agrupados) */}
+      {/* Modal para estudiantes del programa */}
       <Dialog open={openProgramModal} onClose={handleCloseProgramModal} fullWidth maxWidth="md">
         <DialogTitle sx={{ bgcolor: 'rgba(206, 10, 10, 0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <Typography variant="h6" sx={{ color: '#CE0A0A', fontWeight: 'bold' }}>
-            Estudiantes del programa: {selectedProgram?.nombre}
+            Estudiantes del programa: {selectedProgram?.Nombre_programa}
           </Typography>
           <IconButton onClick={handleCloseProgramModal} sx={{ color: '#CE0A0A' }}>
             <CloseIcon />
@@ -304,7 +306,7 @@ const InfoProgramas = () => {
                   <TableRow sx={{ backgroundColor: 'rgba(206, 10, 10, 0.05)' }}>
                     <TableCell sx={{ fontWeight: 'bold' }}>Documento</TableCell>
                     <TableCell sx={{ fontWeight: 'bold' }}>Nombre Completo</TableCell>
-                    <TableCell sx={{ fontWeight: 'bold' }}>Materias</TableCell>
+                    <TableCell sx={{ fontWeight: 'bold' }}>Asignaturas</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
@@ -312,7 +314,7 @@ const InfoProgramas = () => {
                     <TableRow key={idx} hover>
                       <TableCell>{`${stud.tipo_documento} - ${stud.numero_documento}`}</TableCell>
                       <TableCell>{`${stud.nombres} ${stud.apellidos}`}</TableCell>
-                      <TableCell>{stud.materias.join(', ')}</TableCell>
+                      <TableCell>{stud.asignaturas.join(', ')}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -326,23 +328,23 @@ const InfoProgramas = () => {
           </Button>
         </DialogActions>
       </Dialog>
-      {/* Modal para estudiantes de una materia (con notas y periodos) */}
-      <Dialog open={openMateriaModal} onClose={handleCloseMateriaModal} fullWidth maxWidth="md">
+      {/* Modal para estudiantes de una asignatura */}
+      <Dialog open={openAsignaturaModal} onClose={handleCloseAsignaturaModal} fullWidth maxWidth="md">
         <DialogTitle sx={{ bgcolor: 'rgba(206, 10, 10, 0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <Typography variant="h6" sx={{ color: '#CE0A0A', fontWeight: 'bold' }}>
-            Estudiantes de la materia: {selectedMateria?.nombre}
+            Estudiantes de la asignatura: {selectedAsignatura?.Nombre_asignatura}
           </Typography>
-          <IconButton onClick={handleCloseMateriaModal} sx={{ color: '#CE0A0A' }}>
+          <IconButton onClick={handleCloseAsignaturaModal} sx={{ color: '#CE0A0A' }}>
             <CloseIcon />
           </IconButton>
         </DialogTitle>
         <DialogContent dividers>
-          {loadingMateriaStudents ? (
+          {loadingAsignaturaStudents ? (
             <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
               <CircularProgress sx={{ color: '#CE0A0A' }} />
             </Box>
-          ) : materiaStudents.length === 0 ? (
-            <Alert severity="info">No se encontraron estudiantes para esta materia.</Alert>
+          ) : asignaturaStudents.length === 0 ? (
+            <Alert severity="info">No se encontraron estudiantes para esta asignatura.</Alert>
           ) : (
             <TableContainer>
               <Table>
@@ -350,17 +352,15 @@ const InfoProgramas = () => {
                   <TableRow sx={{ backgroundColor: 'rgba(206, 10, 10, 0.05)' }}>
                     <TableCell sx={{ fontWeight: 'bold' }}>Documento</TableCell>
                     <TableCell sx={{ fontWeight: 'bold' }}>Nombre Completo</TableCell>
-                    <TableCell sx={{ fontWeight: 'bold' }}>Nota</TableCell>
-                    <TableCell sx={{ fontWeight: 'bold' }}>Periodo</TableCell>
+                    <TableCell sx={{ fontWeight: 'bold' }}>Nota Final</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {materiaStudents.map((stud, idx) => (
+                  {asignaturaStudents.map((stud, idx) => (
                     <TableRow key={idx} hover>
                       <TableCell>{`${stud.tipo_documento} - ${stud.numero_documento}`}</TableCell>
                       <TableCell>{`${stud.nombres} ${stud.apellidos}`}</TableCell>
-                      <TableCell>{stud.nota}</TableCell>
-                      <TableCell>{stud.periodo}</TableCell>
+                      <TableCell>{stud.Nota_Final}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -369,7 +369,7 @@ const InfoProgramas = () => {
           )}
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleCloseMateriaModal} sx={{ color: '#CE0A0A' }}>
+          <Button onClick={handleCloseAsignaturaModal} sx={{ color: '#CE0A0A' }}>
             Cerrar
           </Button>
         </DialogActions>

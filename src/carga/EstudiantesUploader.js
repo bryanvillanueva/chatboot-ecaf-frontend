@@ -137,21 +137,8 @@ ${response.resultados?.errores?.length > 0 ? '\nErrores:\n' + response.resultado
     setFile(null);
   };
 
-  const handleDownloadTemplate = async () => {
-    setDownloadingTemplate(true);
-    try {
-      // Usar la función de API para descargar plantilla
-      await getPlantilla('estudiantes');
-      setDownloadingTemplate(false);
-    } catch (error) {
-      console.error('Error al descargar plantilla:', error);
-      setResult({
-        success: false,
-        message: 'Error al descargar la plantilla',
-        details: error.message
-      });
-      setDownloadingTemplate(false);
-    }
+  const handleDownloadTemplate = () => {
+    window.open("https://ecafescuela.com/plantilla_excel/Plantilla_Estudiantes.xlsx", "_blank");
   };
 
   // Renderizar diferentes vistas basadas en el estado

@@ -24,7 +24,8 @@ import {
   StepLabel,
   StepContent,
   useTheme,
-  useMediaQuery
+  useMediaQuery,
+  Button
 } from '@mui/material';
 import { 
   CloudUpload as CloudUploadIcon, 
@@ -157,16 +158,16 @@ const CargaExcel = ({ pageTitle }) => {
                         }
                       }}
                     >
-                    <Tab 
-                      icon={<SchoolIcon />} 
-                      label="Información de Estudiantes" 
-                      iconPosition="start"
-                    />
-                    <Tab 
-                      icon={<MenuBookIcon />} 
-                      label="Programas, Materias y Notas" 
-                      iconPosition="start"
-                    />
+                      <Tab 
+                        icon={<SchoolIcon />} 
+                        label="Información de Estudiantes" 
+                        iconPosition="start"
+                      />
+                      <Tab 
+                        icon={<MenuBookIcon />} 
+                        label="Programas, Materias y Notas" 
+                        iconPosition="start"
+                      />
                     </Tabs>
                     <IconButton 
                       sx={{ 
@@ -230,6 +231,7 @@ const CargaExcel = ({ pageTitle }) => {
               </CardContent>
             </Card>
 
+            {/* Sección de descarga de plantillas */}
             <Paper 
               elevation={3} 
               sx={{ 
@@ -237,23 +239,22 @@ const CargaExcel = ({ pageTitle }) => {
                 p: 3,
                 borderRadius: 3,
                 background: 'linear-gradient(to right bottom, #ffffff, #f9f9f9)',
-                border: '1px solid #f0f0f0',
-                opacity: 0,
-                animation: 'fadeIn 0.8s forwards',
-                animationDelay: '0.3s'
+                border: '1px solid #f0f0f0'
               }} 
               className="info-section"
             >
-              <Typography variant="h6" gutterBottom sx={{ 
-                display: 'flex', 
-                alignItems: 'center',
-                borderBottom: '2px solid',
-                borderColor: 'primary.main',
-                pb: 1
-              }}>
+              <Box 
+                sx={{ 
+                  display: 'flex', 
+                  alignItems: 'center',
+                  mb: 2
+                }}
+              >
                 <InsertDriveFileIcon sx={{ mr: 1 }} color="primary" />
-                Información sobre la Carga de Datos
-              </Typography>
+                <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold' }}>
+                  Información sobre la Carga de Datos
+                </Typography>
+              </Box>
               
               <Grid container spacing={3} sx={{ mt: 2 }}>
                 <Grid item xs={12} md={6}>
@@ -313,6 +314,7 @@ const CargaExcel = ({ pageTitle }) => {
                 </Grid>
               </Grid>
 
+              {/* Sección actualizada para descargar plantillas */}
               <Box 
                 sx={{ 
                   mt: 3, 
@@ -320,15 +322,34 @@ const CargaExcel = ({ pageTitle }) => {
                   backgroundColor: 'rgba(206, 10, 10, 0.06)', 
                   color: 'primary.main',
                   borderRadius: 2,
-                  display: 'flex',
-                  alignItems: 'center',
                   border: '1px solid rgba(206, 10, 10, 0.2)'
                 }}
               >
-                <CloudUploadIcon sx={{ mr: 2 }} />
-                <Typography variant="body2">
-                  <strong>¿Necesitas las plantillas?</strong> Puedes descargar las plantillas de Excel desde la sección de cada tipo de carga.
-                </Typography>
+                <Box>
+                  <Typography variant="body2" sx={{ mb: 1 }}>
+                    <strong>¿Necesitas las plantillas?</strong> Descarga las plantillas de Excel haciendo clic en los siguientes botones:
+                  </Typography>
+                  <Box sx={{ display: 'flex', gap: 2 }}>
+                    <Button
+                      variant="outlined"
+                      color="primary"
+                      href="https://ecafescuela.com/plantilla_excel/Plantilla_Estudiantes.xslx"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      Plantilla Estudiantes
+                    </Button>
+                    <Button
+                      variant="outlined"
+                      color="primary"
+                      href="https://ecafescuela.com/plantilla_excel/Plantilla_Programas.xslx"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      Plantilla Programas
+                    </Button>
+                  </Box>
+                </Box>
               </Box>
             </Paper>
           </Box>
