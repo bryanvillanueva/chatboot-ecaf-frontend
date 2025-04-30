@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Instrucciones para Carga de Información de Estudiantes</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        h1 {
+            color: #CE0A0A;
+            border-bottom: 2px solid #CE0A0A;
+            padding-bottom: 10px;
+        }
+        h2 {
+            color: #333;
+            margin-top: 30px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px 12px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        .required {
+            color: #CE0A0A;
+            font-weight: bold;
+        }
+        .warning {
+            background-color: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 10px 15px;
+            margin: 20px 0;
+        }
+        .tip {
+            background-color: #d4edda;
+            border-left: 4px solid #28a745;
+            padding: 10px 15px;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>Instrucciones para Carga de Información de Estudiantes</h1>
+    
+    <p>Este documento contiene instrucciones detalladas sobre cómo completar la plantilla de Excel para cargar información de estudiantes al sistema.</p>
+    
+    <div class="warning">
+        <strong>Importante:</strong> Por favor, lea estas instrucciones completamente antes de comenzar a llenar la plantilla.
+    </div>
+    
+    <h2>Formato de la Plantilla</h2>
+    
+    <p>La plantilla contiene los siguientes campos. Los campos marcados con <span class="required">*</span> son obligatorios:</p>
+    
+    <table>
+        <tr>
+            <th>Campo</th>
+            <th>Descripción</th>
+            <th>Formato</th>
+            <th>Requerido</th>
+        </tr>
+        <tr>
+            <td>tipo_documento</td>
+            <td>Tipo de documento de identidad del estudiante</td>
+            <td>CC (Cédula de Ciudadanía), TI (Tarjeta de Identidad), CE (Cédula de Extranjería), PA (Pasaporte)</td>
+            <td class="required">Sí</td>
+        </tr>
+        <tr>
+            <td>numero_documento</td>
+            <td>Número de documento de identidad</td>
+            <td>Solo números y letras, sin espacios, guiones o puntos</td>
+            <td class="required">Sí</td>
+        </tr>
+        <tr>
+            <td>nombres</td>
+            <td>Nombres completos del estudiante</td>
+            <td>Texto</td>
+            <td class="required">Sí</td>
+        </tr>
+        <tr>
+            <td>apellidos</td>
+            <td>Apellidos completos del estudiante</td>
+            <td>Texto</td>
+            <td class="required">Sí</td>
+        </tr>
+        <tr>
+            <td>fecha_nacimiento</td>
+            <td>Fecha de nacimiento del estudiante</td>
+            <td>YYYY-MM-DD (Ej: 1990-05-15)</td>
+            <td>No</td>
+        </tr>
+        <tr>
+            <td>genero</td>
+            <td>Género del estudiante</td>
+            <td>M (Masculino), F (Femenino), Otro</td>
+            <td>No</td>
+        </tr>
+        <tr>
+            <td>email</td>
+            <td>Correo electrónico del estudiante</td>
+            <td>Correo electrónico válido</td>
+            <td class="required">Sí</td>
+        </tr>
+        <tr>
+            <td>telefono</td>
+            <td>Número de teléfono del estudiante</td>
+            <td>Solo números, sin espacios ni caracteres especiales</td>
+            <td>No</td>
+        </tr>
+        <tr>
+            <td>direccion</td>
+            <td>Dirección de residencia</td>
+            <td>Texto</td>
+            <td>No</td>
+        </tr>
+        <tr>
+            <td>ciudad</td>
+            <td>Ciudad de residencia</td>
+            <td>Texto</td>
+            <td>No</td>
+        </tr>
+    </table>
+    
+    <h2>Instrucciones de Llenado</h2>
+    
+    <ol>
+        <li>No elimine la fila de encabezados (primera fila).</li>
+        <li>Llene todos los campos obligatorios para cada estudiante.</li>
+        <li>Si un campo no es obligatorio y no dispone de la información, puede dejarlo en blanco.</li>
+        <li>Respete el formato indicado para cada campo, especialmente las fechas y los tipos de documento.</li>
+        <li>Verifique que los correos electrónicos sean válidos y estén correctamente escritos.</li>
+        <li>No utilice caracteres especiales ni acentos en los campos que no lo requieran.</li>
+    </ol>
+    
+    <div class="tip">
+        <strong>Recomendación:</strong> Verifique toda la información antes de cargar el archivo al sistema para evitar errores.
+    </div>
+    
+    <h2>Proceso de Carga</h2>
+    
+    <ol>
+        <li>Complete la plantilla siguiendo las instrucciones anteriores.</li>
+        <li>Guarde el archivo en formato Excel 97-2003 (.xls).</li>
+        <li>Acceda al sistema y seleccione la opción de "Carga de Información de Estudiantes".</li>
+        <li>Arrastre el archivo o haga clic para seleccionarlo.</li>
+        <li>Presione el botón "Procesar Archivo".</li>
+        <li>El sistema validará y procesará la información.</li>
+        <li>Se mostrará un informe con los resultados de la carga.</li>
+    </ol>
+    
+    <div class="warning">
+        <strong>Nota:</strong> Si el sistema encuentra errores en algún registro, mostrará un informe detallado. Corrija los errores y vuelva a cargar solo los registros que fallaron.
+    </div>
+    
+    <h2>Ejemplos</h2>
+    
+    <p>A continuación, se muestran ejemplos de registros correctamente formateados:</p>
+    
+    <ul>
+        <li><strong>Ejemplo 1:</strong> CC, 10012345678, Juan Carlos, Pérez Gómez, 1990-01-15, M, juan.perez@ejemplo.com, 3001234567, Calle 123 #45-67, Bogotá</li>
+        <li><strong>Ejemplo 2:</strong> TI, 98765432109, María José, Rodríguez Sánchez, 2001-05-20, F, maria.rodriguez@ejemplo.com, 3109876543, Carrera 54 #32-10, Medellín</li>
+    </ul>
+    
+    <div class="tip">
+        <strong>Ayuda:</strong> Si tiene dudas o problemas durante el proceso de carga, contacte al administrador del sistema.
+    </div>
+</body>
+</html>
