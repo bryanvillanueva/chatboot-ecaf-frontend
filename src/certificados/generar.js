@@ -43,7 +43,6 @@ const GenerarCertificado = ({ pageTitle }) => {
   const pasos = ['Información Personal', 'Detalles del Certificado', 'Resumen', 'Confirmación'];
   const navigate = useNavigate();
 
-  
   // Estado para el paso actual
   const [pasoActual, setPasoActual] = useState(0);
   
@@ -53,6 +52,10 @@ const GenerarCertificado = ({ pageTitle }) => {
   const [openErrorDialog, setOpenErrorDialog] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [certificadoId, setCertificadoId] = useState(null);
+  
+  // Estados para validación de requisitos
+  const [validacionInfo, setValidacionInfo] = useState(null);
+  const [validandoRequisitos, setValidandoRequisitos] = useState(false);
   
   // Estado para almacenar todos los datos del formulario
   const [formData, setFormData] = useState({
@@ -76,7 +79,6 @@ const GenerarCertificado = ({ pageTitle }) => {
   
   // Estado para almacenar los errores de validación
   const [errors, setErrors] = useState({});
-  
 
   // Tipos de identificación disponibles
   const tiposIdentificacion = [
@@ -89,10 +91,65 @@ const GenerarCertificado = ({ pageTitle }) => {
 
   // Tipos de certificados disponibles
   const tiposCertificado = [
-    'Certificado de notas',
-    'Certificado de asistencia',
-    'Certificado general'
+    'certificado de estudio',
+    'certificado de notas',
+    'duplicado de certificado de curso corto',
+    'diploma de grado',
+    'duplicado de diploma',
   ];
+
+  // Función para validar requisitos antes de mostrar el resumen
+  const validarRequisitos = async () => {
+    setValidandoRequisitos(true);
+    
+    try {
+      const currentFormData = {
+        ...formData,
+        nombre: nombreRef.current?.value || formData.nombre,
+        apellido: apellidoRef.current?.value || formData.apellido,
+        tipoIdentificacion: tipoIdentificacionRef.current?.value || formData.tipoIdentificacion,
+        numeroIdentificacion: numeroIdentificacionRef.current?.value || formData.numeroIdentificacion,
+        tipoCertificado: tipoCertificadoRef.current?.value || formData.tipoCertificado,
+        telefono: telefonoRef.current?.value || formData.telefono,
+        correo: correoRef.current?.value || formData.correo
+      };
+
+      // Actualizar formData
+      setFormData(currentFormData);
+
+      // Validar requisitos en el backend
+      const response = await fetch('https://webhook-ecaf-production.up.railway.app/api/certificados/validar-requisitos', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          tipo_identificacion: currentFormData.tipoIdentificacion,
+          numero_identificacion: currentFormData.numeroIdentificacion,
+          tipo_certificado: currentFormData.tipoCertificado
+        }),
+      });
+
+      const result = await response.json();
+      
+      if (result.esValido) {
+        // Si es válido, guardar la información y continuar al resumen
+        setValidacionInfo(result);
+        setPasoActual(2); // Ir al resumen
+      } else {
+        // Si no es válido, mostrar error específico
+        setErrorMessage(result.mensaje + (result.detalles ? '\n\n' + result.detalles : ''));
+        setOpenErrorDialog(true);
+      }
+
+    } catch (error) {
+      console.error('Error al validar requisitos:', error);
+      setErrorMessage('Error al verificar los requisitos. Por favor intente nuevamente.');
+      setOpenErrorDialog(true);
+    } finally {
+      setValidandoRequisitos(false);
+    }
+  };
 
   // Función para obtener los valores actuales del formulario
   const getFormValues = () => {
@@ -120,8 +177,6 @@ const GenerarCertificado = ({ pageTitle }) => {
       }));
     }
   };
-  
-  
 
   // Validación específica para número de identificación según el tipo seleccionado
   const validateNumeroIdentificacion = (values) => {
@@ -249,13 +304,23 @@ const GenerarCertificado = ({ pageTitle }) => {
   // Manejar avance al siguiente paso
   const handleNext = () => {
     if (validarPasoActual()) {
-      setPasoActual((prevPaso) => prevPaso + 1);
+      if (pasoActual === 1) {
+        // En el paso 1 (Detalles del Certificado), validar requisitos antes de ir al resumen
+        validarRequisitos();
+      } else {
+        // Para otros pasos, avanzar normalmente
+        setPasoActual((prevPaso) => prevPaso + 1);
+      }
     }
   };
 
   // Manejar retroceso al paso anterior
   const handleBack = () => {
     setPasoActual((prevPaso) => prevPaso - 1);
+    // Limpiar validación si regresa del resumen
+    if (pasoActual === 2) {
+      setValidacionInfo(null);
+    }
   };
 
   // Reiniciar formulario completamente
@@ -282,84 +347,82 @@ const GenerarCertificado = ({ pageTitle }) => {
     
     setErrors({});
     setPasoActual(0);
+    setValidacionInfo(null);
   };
 
- // Manejar envío del formulario
- // Manejar envío del formulario
-const handleSubmit = async (e) => {
-  if (e) e.preventDefault();
-  setLoading(true);
-  
-  try {
-    // Asegurar que formData esté actualizado con los valores actuales
-    // ejecutando validarPasoActual una última vez
-    const currentFormData = {
-      ...formData,
-      nombre: nombreRef.current?.value || formData.nombre,
-      apellido: apellidoRef.current?.value || formData.apellido,
-      tipoIdentificacion: tipoIdentificacionRef.current?.value || formData.tipoIdentificacion,
-      numeroIdentificacion: numeroIdentificacionRef.current?.value || formData.numeroIdentificacion,
-      tipoCertificado: tipoCertificadoRef.current?.value || formData.tipoCertificado,
-      telefono: telefonoRef.current?.value || formData.telefono,
-      correo: correoRef.current?.value || formData.correo
-    };
+  // Manejar envío del formulario
+  const handleSubmit = async (e) => {
+    if (e) e.preventDefault();
+    setLoading(true);
     
-    // Actualizar el estado formData con los valores actuales
-    setFormData(currentFormData);
-    
-    // Verificar si algún campo está vacío
-    const missingFields = Object.entries(currentFormData)
-      .filter(([key, value]) => !value && key !== 'numeroIdentificacion') // Permitimos que numeroIdentificacion esté vacío si tipoIdentificacion no está seleccionado
-      .map(([key]) => key);
-    
-    if (missingFields.length > 0) {
-      throw new Error(`Campos requeridos faltantes: ${missingFields.join(', ')}`);
+    try {
+      // Asegurar que formData esté actualizado con los valores actuales
+      const currentFormData = {
+        ...formData,
+        nombre: nombreRef.current?.value || formData.nombre,
+        apellido: apellidoRef.current?.value || formData.apellido,
+        tipoIdentificacion: tipoIdentificacionRef.current?.value || formData.tipoIdentificacion,
+        numeroIdentificacion: numeroIdentificacionRef.current?.value || formData.numeroIdentificacion,
+        tipoCertificado: tipoCertificadoRef.current?.value || formData.tipoCertificado,
+        telefono: telefonoRef.current?.value || formData.telefono,
+        correo: correoRef.current?.value || formData.correo
+      };
+      
+      // Actualizar el estado formData con los valores actuales
+      setFormData(currentFormData);
+      
+      // Verificar si algún campo está vacío
+      const missingFields = Object.entries(currentFormData)
+        .filter(([key, value]) => !value && key !== 'numeroIdentificacion')
+        .map(([key]) => key);
+      
+      if (missingFields.length > 0) {
+        throw new Error(`Campos requeridos faltantes: ${missingFields.join(', ')}`);
+      }
+      
+      // Preparar datos para enviar al servidor
+      const dataToSend = {
+        nombre: currentFormData.nombre,
+        apellido: currentFormData.apellido,
+        tipo_identificacion: currentFormData.tipoIdentificacion,
+        numero_identificacion: currentFormData.numeroIdentificacion,
+        tipo_certificado: currentFormData.tipoCertificado,
+        telefono: currentFormData.telefono,
+        correo: currentFormData.correo
+      };
+      
+      // Para depuración
+      console.log("Enviando datos:", dataToSend);
+      
+      // Realizar la solicitud POST al endpoint
+      const response = await fetch('https://webhook-ecaf-production.up.railway.app/api/certificados', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(dataToSend),
+      });
+      
+      const result = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(result.mensaje || result.error || 'Error al enviar la solicitud');
+      }
+      
+      // Guardar el ID del certificado
+    setCertificadoId(result.referencia)
+      
+      // Mostrar diálogo de éxito
+      setOpenSuccessDialog(true);
+      
+    } catch (error) {
+      console.error('Error al enviar formulario:', error);
+      setErrorMessage(error.message || 'Error al procesar la solicitud');
+      setOpenErrorDialog(true);
+    } finally {
+      setLoading(false);
     }
-    
-    // Preparar datos para enviar al servidor
-    const dataToSend = {
-      nombre: currentFormData.nombre,
-      apellido: currentFormData.apellido,
-      tipo_identificacion: currentFormData.tipoIdentificacion,
-      numero_identificacion: currentFormData.numeroIdentificacion,
-      tipo_certificado: currentFormData.tipoCertificado,
-      telefono: currentFormData.telefono,
-      correo: currentFormData.correo
-    };
-    
-    // Para depuración
-    console.log("Enviando datos:", dataToSend);
-    
-    // Realizar la solicitud POST al endpoint
-    const response = await fetch('https://webhook-ecaf-production.up.railway.app/api/certificados', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(dataToSend),
-    });
-    
-    const result = await response.json();
-    
-    if (!response.ok) {
-      throw new Error(result.error || 'Error al enviar la solicitud');
-    }
-    
-    // Guardar el ID del certificado
-    setCertificadoId(result.id);
-    
-    // Mostrar diálogo de éxito
-    setOpenSuccessDialog(true);
-    
-    // No reiniciar el formulario hasta que cierren el diálogo
-  } catch (error) {
-    console.error('Error al enviar formulario:', error);
-    setErrorMessage(error.message || 'Error al procesar la solicitud');
-    setOpenErrorDialog(true);
-  } finally {
-    setLoading(false);
-  }
-};
+  };
       
   // Manejar cierre del diálogo de éxito
   const handleCloseSuccessDialog = () => {
@@ -436,24 +499,23 @@ const handleSubmit = async (e) => {
       
       {/* Número de Identificación */}
       <Grid item xs={12} md={6}>
-      <TextField
-  fullWidth
-  label="Número de Identificación"
-  name="numeroIdentificacion"
-  inputRef={numeroIdentificacionRef}
-  onChange={handleChange}
-  error={!!errors.numeroIdentificacion}
-  helperText={errors.numeroIdentificacion}
-  variant="outlined"
-  // Eliminar esta línea: disabled={!identificacionHabilitada}
-  defaultValue={formData.numeroIdentificacion}
-  autoComplete="off"
-  sx={{
-    '& .MuiInputBase-input': {
-      color: 'rgba(0, 0, 0, 0.87)'
-    }
-  }}
-/>
+        <TextField
+          fullWidth
+          label="Número de Identificación"
+          name="numeroIdentificacion"
+          inputRef={numeroIdentificacionRef}
+          onChange={handleChange}
+          error={!!errors.numeroIdentificacion}
+          helperText={errors.numeroIdentificacion}
+          variant="outlined"
+          defaultValue={formData.numeroIdentificacion}
+          autoComplete="off"
+          sx={{
+            '& .MuiInputBase-input': {
+              color: 'rgba(0, 0, 0, 0.87)'
+            }
+          }}
+        />
       </Grid>
     </Grid>
   );
@@ -484,9 +546,9 @@ const handleSubmit = async (e) => {
         </FormControl>
         <Box sx={{ mt: 1, display: 'flex', alignItems: 'center' }}>
           <Typography variant="caption" color="text.secondary" sx={{ fontStyle: 'italic' }}>
-            El tipo de certificado determinará la información incluida
+            El tipo de certificado determinará la información incluida y los requisitos necesarios
           </Typography>
-          <Tooltip title="Los certificados de notas incluyen calificaciones, los de asistencia incluyen fechas y horas, y los generales son para constancias básicas.">
+          <Tooltip title="Cada tipo de certificado tiene requisitos específicos que se validarán automáticamente.">
             <IconButton size="small" color="primary">
               <HelpOutlineIcon fontSize="small" />
             </IconButton>
@@ -529,10 +591,10 @@ const handleSubmit = async (e) => {
     </Grid>
   );
 
-  // Componente para el paso de confirmación
+  // Componente mejorado para el paso de confirmación/resumen
   const PasoConfirmacion = () => {
-    // Usamos directamente el estado formData que contiene toda la información
     console.log("Valores en el resumen (formData):", formData);
+    console.log("Información de validación:", validacionInfo);
     
     return (
       <Box>
@@ -580,6 +642,49 @@ const handleSubmit = async (e) => {
             </Grid>
           </CardContent>
         </Card>
+
+        {/* Información de validación y precio */}
+        {validacionInfo && (
+          <Card variant="outlined" sx={{ mb: 3, bgcolor: alpha('#4caf50', 0.05), border: '1px solid #4caf50' }}>
+            <CardContent>
+              <Typography variant="h6" sx={{ color: '#2e7d32', mb: 2, display: 'flex', alignItems: 'center' }}>
+                <CheckCircleOutlineIcon sx={{ mr: 1 }} />
+                Certificado Validado
+              </Typography>
+              
+              <Grid container spacing={2}>
+                <Grid item xs={12} md={6}>
+                  <Typography variant="subtitle2" color="text.secondary">
+                    Estudiante encontrado:
+                  </Typography>
+                  <Typography variant="body1" gutterBottom>
+                    {validacionInfo.estudianteNombre}
+                  </Typography>
+                  
+                  <Typography variant="subtitle2" color="text.secondary">
+                    Estado del certificado:
+                  </Typography>
+                  <Typography variant="body1" gutterBottom>
+                    {validacionInfo.estadoInicial === 'completado' ? 'Será procesado inmediatamente' : 'Pendiente de pago'}
+                  </Typography>
+                </Grid>
+                
+                <Grid item xs={12} md={6}>
+                  <Typography variant="subtitle2" color="text.secondary">
+                    Valor del certificado:
+                  </Typography>
+                  <Typography variant="h6" sx={{ color: validacionInfo.precio === 0 ? '#2e7d32' : '#1976d2', mb: 1 }}>
+                    {validacionInfo.precio === 0 ? 'GRATUITO' : `$${validacionInfo.precio.toLocaleString()}`}
+                  </Typography>
+                  
+                  <Typography variant="body2" color="text.secondary" sx={{ fontStyle: 'italic' }}>
+                    {validacionInfo.mensaje}
+                  </Typography>
+                </Grid>
+              </Grid>
+            </CardContent>
+          </Card>
+        )}
         
         <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
           Por favor verifique que la información proporcionada sea correcta antes de enviar la solicitud.
@@ -698,7 +803,8 @@ const handleSubmit = async (e) => {
                   <Button
                     variant="contained"
                     onClick={handleNext}
-                    endIcon={<ArrowForwardIcon />}
+                    disabled={validandoRequisitos}
+                    endIcon={validandoRequisitos ? <CircularProgress size={16} /> : <ArrowForwardIcon />}
                     sx={{ 
                       bgcolor: '#CE0A0A',
                       borderRadius: 2,
@@ -707,7 +813,7 @@ const handleSubmit = async (e) => {
                       }
                     }}
                   >
-                    Siguiente
+                    {pasoActual === 1 ? (validandoRequisitos ? 'Validando...' : 'Validar y Continuar') : 'Siguiente'}
                   </Button>
                 )}
               </Box>
@@ -740,13 +846,21 @@ const handleSubmit = async (e) => {
             Su solicitud de certificado ha sido recibida correctamente. 
             Se ha registrado con el número de referencia: <strong>#{certificadoId}</strong>
           </DialogContentText>
-          <DialogContentText sx={{ mb: 2 }}>
-            Para completar el proceso, por favor realice el pago correspondiente 
-            en la sección de "Consultar Certificados" de nuestra plataforma.
-          </DialogContentText>
-          <DialogContentText sx={{ fontWeight: 'bold', color: 'text.primary' }}>
-            Una vez confirmado el pago, comenzaremos a procesar su certificado.
-          </DialogContentText>
+          {validacionInfo && validacionInfo.precio === 0 ? (
+            <DialogContentText sx={{ mb: 2, color: 'success.main', fontWeight: 'bold' }}>
+              ¡Su certificado será procesado inmediatamente sin costo adicional!
+            </DialogContentText>
+          ) : (
+            <>
+              <DialogContentText sx={{ mb: 2 }}>
+                Para completar el proceso, por favor realice el pago correspondiente 
+                en la sección de "Consultar Certificados" de nuestra plataforma.
+              </DialogContentText>
+              <DialogContentText sx={{ fontWeight: 'bold', color: 'text.primary' }}>
+                Una vez confirmado el pago, comenzaremos a procesar su certificado.
+              </DialogContentText>
+            </>
+          )}
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 3, display: 'flex', justifyContent: 'space-between' }}>
           <Button 
@@ -786,7 +900,7 @@ const handleSubmit = async (e) => {
         PaperProps={{
           sx: { 
             borderRadius: 2,
-            maxWidth: 500
+            maxWidth: 600
           }
         }}
       >
@@ -797,11 +911,11 @@ const handleSubmit = async (e) => {
           </Box>
         </DialogTitle>
         <DialogContent>
-          <DialogContentText id="error-dialog-description">
-            Ha ocurrido un error al procesar su solicitud: {errorMessage}
+          <DialogContentText id="error-dialog-description" sx={{ whiteSpace: 'pre-line' }}>
+            {errorMessage}
           </DialogContentText>
           <DialogContentText sx={{ mt: 2 }}>
-            Por favor intente nuevamente o contacte al soporte técnico si el problema persiste.
+            Por favor verifique los requisitos y trate nuevamente, o contacte al soporte técnico si el problema persiste.
           </DialogContentText>
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 3 }}>
