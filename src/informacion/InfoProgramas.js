@@ -43,12 +43,13 @@ const InfoProgramas = () => {
     severity: 'error'
   });
 
-  // Estado para módulos y asignaturas por programa
-  const [modulosByProgram, setModulosByProgram] = useState({});
-  const [asignaturasByModulo, setAsignaturasByModulo] = useState({});
+  // Estados para la estructura jerárquica expandible
   const [expandedPrograms, setExpandedPrograms] = useState({});
-  const [expandedModulos, setExpandedModulos] = useState({});
-  const [loadingAsignaturas, setLoadingAsignaturas] = useState({});
+  const [expandedModules, setExpandedModules] = useState({});
+  const [modulesByProgram, setModulesByProgram] = useState({});
+  const [asignaturasByModule, setAsignaturasByModule] = useState({});
+    const [expandedModulos, setExpandedModulos] = useState({});
+
 
   // Modal para estudiantes a nivel de programa
   const [openProgramModal, setOpenProgramModal] = useState(false);
@@ -56,12 +57,14 @@ const InfoProgramas = () => {
   const [programStudents, setProgramStudents] = useState([]);
   const [loadingProgramStudents, setLoadingProgramStudents] = useState(false);
 
-  // Modal para estudiantes de una asignatura específica
-  const [openAsignaturaModal, setOpenAsignaturaModal] = useState(false);
-  const [selectedAsignatura, setSelectedAsignatura] = useState(null);
-  const [asignaturaStudents, setAsignaturaStudents] = useState([]);
-  const [loadingAsignaturaStudents, setLoadingAsignaturaStudents] = useState(false);
+  // Modal para estudiantes de un módulo
+  const [openModuleModal, setOpenModuleModal] = useState(false);
+  const [selectedModule, setSelectedModule] = useState(null);
+  const [moduleStudents, setModuleStudents] = useState([]);
+  const [loadingModuleStudents, setLoadingModuleStudents] = useState(false);
 
+
+  
   useEffect(() => {
     fetchProgramas();
   }, []);
@@ -150,6 +153,7 @@ const InfoProgramas = () => {
   };
 
   const handleChangePage = (event, newPage) => setPage(newPage);
+  
   const handleChangeRowsPerPage = (event) => {
     setRowsPerPage(parseInt(event.target.value, 10));
     setPage(0);
@@ -157,111 +161,105 @@ const InfoProgramas = () => {
 
   const handleCloseSnackbar = () => setSnackbar({ ...snackbar, open: false });
 
-  // Función para obtener módulos y asignaturas cuando se expande un programa
-  const handleExpandProgram = async (programaNombre, ids) => {
-    const isExpanded = expandedPrograms[programaNombre];
+
+  // Toggle expand/collapse para módulos de un programa
+  const toggleExpandProgram = async (programId) => {
+
     setExpandedPrograms(prev => ({
       ...prev,
       [programaNombre]: !isExpanded
     }));
 
-    // Si se está expandiendo y no tenemos los módulos, los obtenemos
-    if (!isExpanded && !modulosByProgram[programaNombre]) {
+    
+    // Si se expande y no se han cargado los módulos, hacer la consulta
+    if (!expandedPrograms[programId] && !modulesByProgram[programId]) {
       try {
-        setLoadingAsignaturas(prev => ({ ...prev, [programaNombre]: true }));
+        // Adaptamos para usar asignaturas directamente, ya que posiblemente la API de módulos no existe
+        const res = await axios.get(`https://webhook-ecaf-production.up.railway.app/api/programas/${programId}/asignaturas`);
         
-        // Obtenemos asignaturas para todos los IDs de programa con este nombre
-        const asignaturasPromises = ids.map(id => 
-          axios.get(`https://webhook-ecaf-production.up.railway.app/api/programas/${id}/asignaturas`)
-        );
-        
-        const responses = await Promise.all(asignaturasPromises);
-        
-        // Combinamos todas las asignaturas de todos los programas con el mismo nombre
-        const todasAsignaturas = responses.flatMap(res => res.data);
-        
-        // Procesamos los datos para agruparlos por módulo
+        // Agrupamos las asignaturas por módulo para crear una estructura de módulos
         const modulos = {};
-        const asignaturas = {};
-        
-        todasAsignaturas.forEach(item => {
-          const moduloKey = item.Nombre_modulo || 'Transversales';
+        res.data.forEach(asignatura => {
+          const moduloId = asignatura.Id_Modulo || 'sin-modulo';
+          const moduloNombre = asignatura.Nombre_modulo || 'Sin Módulo Asignado';
           
-          // Agrupamos módulos
-          if (!modulos[moduloKey]) {
-            modulos[moduloKey] = {
-              id: item.Id_Modulo,
-              nombre: moduloKey
+          if (!modulos[moduloId]) {
+            modulos[moduloId] = {
+              Id_Modulo: moduloId,
+              Nombre_modulo: moduloNombre,
+              Estado_modulo: 'Activo',
+              asignaturas: []
             };
           }
           
-          // Agrupamos asignaturas por módulo
-          if (!asignaturas[moduloKey]) {
-            asignaturas[moduloKey] = [];
-          }
+          modulos[moduloId].asignaturas.push(asignatura);
         });
         
-        // Para cada módulo, agrupamos las asignaturas por nombre
-        Object.keys(modulos).forEach(moduloKey => {
-          // Filtrar asignaturas de este módulo
-          const asignaturasDelModulo = todasAsignaturas.filter(item => 
-            (item.Nombre_modulo || 'Transversales') === moduloKey
-          );
-          
-          // Agrupar asignaturas por nombre
-          const asignaturasAgrupadas = agruparAsignaturas(asignaturasDelModulo);
-          
-          // Guardar las asignaturas agrupadas
-          asignaturas[moduloKey] = asignaturasAgrupadas;
-        });
+        // Convertimos el objeto a array para usar en el estado
+        const modulosArray = Object.values(modulos);
+        setModulesByProgram(prev => ({ ...prev, [programId]: modulosArray }));
         
-        setModulosByProgram(prev => ({ ...prev, [programaNombre]: modulos }));
-        setAsignaturasByModulo(prev => ({ ...prev, [programaNombre]: asignaturas }));
+        // Pre-cargamos las asignaturas para cada módulo
+        modulosArray.forEach(modulo => {
+          setAsignaturasByModule(prev => ({ 
+            ...prev, 
+            [modulo.Id_Modulo]: modulo.asignaturas 
+          }));
+        });
       } catch (err) {
-        console.error('❌ Error al obtener asignaturas para el programa:', err);
-        setSnackbar({
-          open: true,
-          message: 'Error al cargar asignaturas y módulos',
-          severity: 'error'
-        });
-      } finally {
-        setLoadingAsignaturas(prev => ({ ...prev, [programaNombre]: false }));
+        console.error('❌ Error al obtener módulos/asignaturas para el programa:', err);
+        setSnackbar({ open: true, message: 'Error al cargar información del programa', severity: 'error' });
       }
     }
   };
 
-  // Toggle para expandir/colapsar módulos
-  const handleExpandModulo = (programaNombre, moduloKey) => {
-    setExpandedModulos(prev => ({
+  // Toggle expand/collapse para asignaturas de un módulo
+  const toggleExpandModule = async (moduleId) => {
+    setExpandedModules(prev => ({
       ...prev,
-      [`${programaNombre}-${moduloKey}`]: !prev[`${programaNombre}-${moduloKey}`]
+      [moduleId]: !prev[moduleId]
     }));
+    
+    // Las asignaturas ya deberían estar pre-cargadas en toggleExpandProgram,
+    // pero por si acaso verificamos
+    if (!expandedModules[moduleId] && !asignaturasByModule[moduleId]) {
+      // No hacemos llamada a API aquí ya que las asignaturas fueron pre-cargadas
+      console.log('Las asignaturas deberían estar pre-cargadas para el módulo:', moduleId);
+    }
+
   };
 
   // Modal para estudiantes asociados a un programa
   const handleOpenProgramModal = (program) => {
     setSelectedProgram(program);
     setOpenProgramModal(true);
-    setLoadingProgramStudents(true);
-    
-    // Obtenemos estudiantes para todos los IDs de programa con este nombre
-    Promise.all(program.ids.map(id => 
-      axios.get(`https://webhook-ecaf-production.up.railway.app/api/programas/${id}/estudiantes`)
-    ))
-    .then(responses => {
-      // Combinamos los estudiantes de todos los programas
-      const todosEstudiantes = responses.flatMap(res => res.data);
-      
-      // Agrupar estudiantes: cada estudiante aparece una sola vez con sus asignaturas
-      const agrupados = {};
-      todosEstudiantes.forEach(item => {
-        const key = item.numero_documento;
-        if (!agrupados[key]) {
-          agrupados[key] = { ...item, asignaturas: [] };
-        }
-        if (item.Nombre_asignatura && !agrupados[key].asignaturas.includes(item.Nombre_asignatura)) {
-          agrupados[key].asignaturas.push(item.Nombre_asignatura);
-        }
+
+    axios.get(`https://webhook-ecaf-production.up.railway.app/api/programas/${program.Id_Programa}/estudiantes`)
+      .then(res => {
+        // Agrupar estudiantes: cada estudiante aparece una sola vez
+        const agrupados = {};
+        res.data.forEach(item => {
+          const key = item.numero_documento;
+          if (!agrupados[key]) {
+            agrupados[key] = { 
+              ...item, 
+              modulos: [],
+              asignaturas: []
+            };
+          }
+          if (item.Nombre_modulo && !agrupados[key].modulos.includes(item.Nombre_modulo)) {
+            agrupados[key].modulos.push(item.Nombre_modulo);
+          }
+          if (item.Nombre_asignatura && !agrupados[key].asignaturas.includes(item.Nombre_asignatura)) {
+            agrupados[key].asignaturas.push(item.Nombre_asignatura);
+          }
+        });
+        setProgramStudents(Object.values(agrupados));
+      })
+      .catch(err => {
+        console.error('❌ Error al obtener estudiantes del programa:', err);
+        setSnackbar({ open: true, message: 'Error al cargar estudiantes del programa', severity: 'error' });
+
       });
       
       setProgramStudents(Object.values(agrupados));
@@ -282,6 +280,35 @@ const InfoProgramas = () => {
     setOpenProgramModal(false);
     setSelectedProgram(null);
     setProgramStudents([]);
+  };
+
+  // Función modificada para obtener estudiantes del módulo
+const handleOpenModuleModal = (module) => {
+  setSelectedModule(module);
+  setOpenModuleModal(true);
+  setLoadingModuleStudents(true);
+  
+  // Usamos el nuevo endpoint específico para módulos
+  axios.get(`https://webhook-ecaf-production.up.railway.app/api/modulos/${module.Id_Modulo}/estudiantes`)
+    .then(res => {
+      setModuleStudents(res.data);
+      setLoadingModuleStudents(false);
+    })
+    .catch(err => {
+      console.error('❌ Error al obtener estudiantes del módulo:', err);
+      setSnackbar({ 
+        open: true, 
+        message: 'Error al cargar estudiantes del módulo', 
+        severity: 'error' 
+      });
+      setLoadingModuleStudents(false);
+    });
+};
+
+  const handleCloseModuleModal = () => {
+    setOpenModuleModal(false);
+    setSelectedModule(null);
+    setModuleStudents([]);
   };
 
   // Modal para estudiantes de una asignatura específica
@@ -396,101 +423,112 @@ const InfoProgramas = () => {
                           >
                             Ver Estudiantes
                           </Button>
-                          <Typography variant="body2" sx={{ mr: 2 }}>
-                            <strong>Estado:</strong> {programa.Estado}
-                          </Typography>
-                          <Typography variant="body2">
-                            <strong>Módulos:</strong> {programa.Incluye_Modulos ? 'Sí' : 'No'}
-                          </Typography>
-                        </Box>
-                      </Box>
-                    </AccordionSummary>
-                    <AccordionDetails sx={{ p: 0, pt: 1 }}>
-                      {loadingAsignaturas[programa.Nombre_programa] ? (
-                        <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
-                          <CircularProgress size={30} sx={{ color: '#CE0A0A' }} />
-                        </Box>
-                      ) : (
-                        <>
-                          {/* Cabecera para la sección de Módulos */}
-                          <Box sx={{ p: 2, bgcolor: 'rgba(206, 10, 10, 0.02)' }}>
-                            <Typography variant="subtitle1" sx={{ fontWeight: 'bold', color: '#CE0A0A' }}>
-                              Módulos
-                            </Typography>
-                            <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-                              Haz clic en un módulo para ver sus asignaturas
-                            </Typography>
-                          </Box>
 
-                          {/* Lista de módulos por programa */}
-                          {modulosByProgram[programa.Nombre_programa] && 
-                            Object.keys(modulosByProgram[programa.Nombre_programa]).length > 0 ? (
-                            Object.keys(modulosByProgram[programa.Nombre_programa]).map((moduloKey) => (
-                              <Accordion 
-                                key={`modulo-${programa.Nombre_programa}-${moduloKey}`}
-                                expanded={expandedModulos[`${programa.Nombre_programa}-${moduloKey}`] || false}
-                                onChange={() => handleExpandModulo(programa.Nombre_programa, moduloKey)}
-                                disableGutters
-                                sx={{ boxShadow: 'none', '&:before': { display: 'none' } }}
-                              >
-                                <AccordionSummary
-                                  expandIcon={<ExpandMoreIcon />}
-                                  sx={{ 
-                                    pl: 3, 
-                                    bgcolor: 'rgba(206, 10, 10, 0.02)', 
-                                    '&:hover': { bgcolor: 'rgba(206, 10, 10, 0.05)' },
-                                    '&.Mui-expanded': { bgcolor: 'rgba(206, 10, 10, 0.05)' }
-                                  }}
-                                >
-                                  <Typography sx={{ fontWeight: '500' }}>{moduloKey}</Typography>
-                                </AccordionSummary>
-                                <AccordionDetails sx={{ p: 0 }}>
-                                  {/* Tabla de asignaturas */}
-                                  {asignaturasByModulo[programa.Nombre_programa] && 
-                                    asignaturasByModulo[programa.Nombre_programa][moduloKey] && 
-                                    asignaturasByModulo[programa.Nombre_programa][moduloKey].length > 0 ? (
-                                    <TableContainer>
-                                      <Table size="small">
-                                        <TableHead>
-                                          <TableRow sx={{ backgroundColor: 'rgba(206, 10, 10, 0.03)' }}>
-                                            <TableCell sx={{ fontWeight: 'bold', pl: 6 }}>Asignatura</TableCell>
-                                            <TableCell sx={{ fontWeight: 'bold' }}>Acciones</TableCell>
-                                          </TableRow>
-                                        </TableHead>
-                                        <TableBody>
-                                          {asignaturasByModulo[programa.Nombre_programa][moduloKey].map((asignatura) => (
-                                            <TableRow key={asignatura.Nombre_asignatura} hover>
-                                              <TableCell sx={{ pl: 6 }}>{asignatura.Nombre_asignatura}</TableCell>
-                                              <TableCell>
-                                                <Button
-                                                  variant="outlined"
-                                                  size="small"
-                                                  onClick={() => handleOpenAsignaturaModal(asignatura)}
-                                                  sx={{
-                                                    color: '#CE0A0A',
-                                                    borderColor: '#CE0A0A',
-                                                    '&:hover': { borderColor: '#b00909', color: '#b00909' }
-                                                  }}
-                                                >
-                                                  Ver Notas
-                                                </Button>
-                                              </TableCell>
-                                            </TableRow>
-                                          ))}
-                                        </TableBody>
-                                      </Table>
-                                    </TableContainer>
-                                  ) : (
-                                    <Box sx={{ p: 2 }}>
-                                      <Alert severity="info">No hay asignaturas para este módulo.</Alert>
-                                    </Box>
-                                  )}
-                                </AccordionDetails>
-                              </Accordion>
-                            ))
-                          ) : (
-                            <Box sx={{ p: 2 }}>
-                              <Alert severity="info">No se encontraron módulos para este programa.</Alert>
+                        </TableCell>
+                      </TableRow>,
+                      <TableRow key={`collapse-${prog.Id_Programa}`}>
+                        <TableCell style={{ paddingBottom: 0, paddingTop: 0 }} colSpan={6}>
+                          <Collapse in={expandedPrograms[prog.Id_Programa]} timeout="auto" unmountOnExit>
+                            <Box sx={{ margin: 1, ml: 4 }}>
+                              <Typography variant="subtitle1" sx={{ mb: 1, color: '#CE0A0A', fontWeight: 'bold' }}>
+                                Módulos del Programa
+                              </Typography>
+                              {!modulesByProgram[prog.Id_Programa] ? (
+                                <Box sx={{ display: 'flex', justifyContent: 'center', py: 2 }}>
+                                  <CircularProgress size={24} sx={{ color: '#CE0A0A' }} />
+                                </Box>
+                              ) : modulesByProgram[prog.Id_Programa].length === 0 ? (
+                                <Alert severity="info">No se encontraron módulos para este programa.</Alert>
+                              ) : (
+                                <Table size="small">
+                                  <TableHead>
+                                    <TableRow sx={{ backgroundColor: 'rgba(206, 10, 10, 0.05)' }}>
+                                      <TableCell sx={{ fontWeight: 'bold' }} />
+                                      <TableCell sx={{ fontWeight: 'bold' }}>Nombre del Módulo</TableCell>
+                                      <TableCell sx={{ fontWeight: 'bold' }}>Estado</TableCell>
+                                      <TableCell sx={{ fontWeight: 'bold' }}>Acciones</TableCell>
+                                    </TableRow>
+                                  </TableHead>
+                                  <TableBody>
+                                    {modulesByProgram[prog.Id_Programa].map((mod) => [
+                                      <TableRow key={`mod-${mod.Id_Modulo}`} hover>
+                                        <TableCell>
+                                          <IconButton size="small" onClick={() => toggleExpandModule(mod.Id_Modulo)}>
+                                            {expandedModules[mod.Id_Modulo] ? <KeyboardArrowUp /> : <KeyboardArrowDown />}
+                                          </IconButton>
+                                        </TableCell>
+                                        <TableCell>{mod.Nombre_modulo}</TableCell>
+                                        <TableCell>{mod.Estado_modulo || 'Activo'}</TableCell>
+                                        <TableCell>
+                                          <Button
+                                            variant="outlined"
+                                            size="small"
+                                            onClick={() => handleOpenModuleModal({...mod, Id_Programa: prog.Id_Programa})}
+                                            sx={{
+                                              color: '#CE0A0A',
+                                              borderColor: '#CE0A0A',
+                                              '&:hover': { borderColor: '#b00909', color: '#b00909' }
+                                            }}
+                                          >
+                                            Ver Estudiantes
+                                          </Button>
+                                        </TableCell>
+                                      </TableRow>,
+                                      <TableRow key={`collapse-mod-${mod.Id_Modulo}`}>
+                                        <TableCell style={{ paddingBottom: 0, paddingTop: 0 }} colSpan={6}>
+                                          <Collapse in={expandedModules[mod.Id_Modulo]} timeout="auto" unmountOnExit>
+                                            <Box sx={{ margin: 1, ml: 4 }}>
+                                              <Typography variant="subtitle2" sx={{ mb: 1, color: '#CE0A0A', fontWeight: 'bold' }}>
+                                                Asignaturas del Módulo
+                                              </Typography>
+                                              {!asignaturasByModule[mod.Id_Modulo] ? (
+                                                <Box sx={{ display: 'flex', justifyContent: 'center', py: 2 }}>
+                                                  <CircularProgress size={20} sx={{ color: '#CE0A0A' }} />
+                                                </Box>
+                                              ) : asignaturasByModule[mod.Id_Modulo].length === 0 ? (
+                                                <Alert severity="info" sx={{ mb: 2 }}>No se encontraron asignaturas para este módulo.</Alert>
+                                              ) : (
+                                                <Table size="small">
+                                                  <TableHead>
+                                                    <TableRow sx={{ backgroundColor: 'rgba(206, 10, 10, 0.02)' }}>
+                                                      <TableCell sx={{ fontWeight: 'bold' }}>Nombre de la Asignatura</TableCell>
+                                                      <TableCell sx={{ fontWeight: 'bold' }}>Estado</TableCell>
+                                                      <TableCell sx={{ fontWeight: 'bold' }}>Acciones</TableCell>
+                                                    </TableRow>
+                                                  </TableHead>
+                                                  <TableBody>
+                                                    {asignaturasByModule[mod.Id_Modulo].map((asig) => (
+                                                      <TableRow key={`asig-${asig.Id_Asignatura}`} hover>
+                                                        <TableCell>{asig.Nombre_asignatura}</TableCell>
+                                                        <TableCell>{asig.Estado_asignatura || 'Activa'}</TableCell>
+                                                        <TableCell>
+                                                          <Button
+                                                            variant="outlined"
+                                                            size="small"
+                                                            onClick={() => handleOpenAsignaturaModal(asig)}
+                                                            sx={{
+                                                              color: '#CE0A0A',
+                                                              borderColor: '#CE0A0A',
+                                                              '&:hover': { borderColor: '#b00909', color: '#b00909' }
+                                                            }}
+                                                          >
+                                                            Ver Estudiantes
+                                                          </Button>
+                                                        </TableCell>
+                                                      </TableRow>
+                                                    ))}
+                                                  </TableBody>
+                                                </Table>
+                                              )}
+                                            </Box>
+                                          </Collapse>
+                                        </TableCell>
+                                      </TableRow>
+                                    ])}
+                                  </TableBody>
+                                </Table>
+                              )}
+
                             </Box>
                           )}
                         </>
@@ -514,6 +552,8 @@ const InfoProgramas = () => {
           )}
         </Paper>
       </Container>
+      
+      {/* Snackbar para notificaciones */}
 
       <Snackbar
         open={snackbar.open}
@@ -527,115 +567,184 @@ const InfoProgramas = () => {
           </IconButton>
         }
       />
-
+      
       {/* Modal para estudiantes del programa */}
       <Dialog open={openProgramModal} onClose={handleCloseProgramModal} fullWidth maxWidth="md">
-        <DialogTitle sx={{ bgcolor: 'rgba(206, 10, 10, 0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Typography variant="h6" sx={{ color: '#CE0A0A', fontWeight: 'bold' }}>
-            Estudiantes del programa: {selectedProgram?.Nombre_programa}
-          </Typography>
-          <IconButton onClick={handleCloseProgramModal} sx={{ color: '#CE0A0A' }}>
-            <CloseIcon />
-          </IconButton>
-        </DialogTitle>
-        <DialogContent dividers>
-          {loadingProgramStudents ? (
-            <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
-              <CircularProgress sx={{ color: '#CE0A0A' }} />
-            </Box>
-          ) : programStudents.length === 0 ? (
-            <Alert severity="info">No se encontraron estudiantes para este programa.</Alert>
-          ) : (
-            <TableContainer>
-              <Table>
-                <TableHead>
-                  <TableRow sx={{ backgroundColor: 'rgba(206, 10, 10, 0.05)' }}>
-                    <TableCell sx={{ fontWeight: 'bold' }}>Documento</TableCell>
-                    <TableCell sx={{ fontWeight: 'bold' }}>Nombre Completo</TableCell>
-                    <TableCell sx={{ fontWeight: 'bold' }}>Asignaturas</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {programStudents.map((stud, idx) => (
-                    <TableRow key={idx} hover>
-                      <TableCell>{`${stud.tipo_documento} - ${stud.numero_documento}`}</TableCell>
-                      <TableCell>{`${stud.nombres} ${stud.apellidos}`}</TableCell>
-                      <TableCell>{stud.asignaturas.join(', ')}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </TableContainer>
-          )}
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleCloseProgramModal} sx={{ color: '#CE0A0A' }}>
-            Cerrar
-          </Button>
-        </DialogActions>
-      </Dialog>
-
-      {/* Modal para estudiantes de una asignatura */}
-      <Dialog open={openAsignaturaModal} onClose={handleCloseAsignaturaModal} fullWidth maxWidth="md">
-        <DialogTitle sx={{ bgcolor: 'rgba(206, 10, 10, 0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Typography variant="h6" sx={{ color: '#CE0A0A', fontWeight: 'bold' }}>
-            Estudiantes de la asignatura: {selectedAsignatura?.Nombre_asignatura}
-          </Typography>
-          <IconButton onClick={handleCloseAsignaturaModal} sx={{ color: '#CE0A0A' }}>
-            <CloseIcon />
-          </IconButton>
-        </DialogTitle>
-        <DialogContent dividers>
-          {loadingAsignaturaStudents ? (
-            <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
-              <CircularProgress sx={{ color: '#CE0A0A' }} />
-            </Box>
-          ) : asignaturaStudents.length === 0 ? (
-            <Alert severity="info">No se encontraron estudiantes para esta asignatura.</Alert>
-          ) : (
-            <TableContainer>
-              <Table>
-                <TableHead>
-                  <TableRow sx={{ backgroundColor: 'rgba(206, 10, 10, 0.05)' }}>
-                    <TableCell sx={{ fontWeight: 'bold' }}>Documento</TableCell>
-                    <TableCell sx={{ fontWeight: 'bold' }}>Nombre Completo</TableCell>
-                    <TableCell sx={{ fontWeight: 'bold' }}>Nota Final</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {asignaturaStudents.map((stud, idx) => (
-                    <TableRow key={idx} hover>
-                      <TableCell>{`${stud.tipo_documento} - ${stud.numero_documento}`}</TableCell>
-                      <TableCell>{`${stud.nombres} ${stud.apellidos}`}</TableCell>
-                      <TableCell>
+  <DialogTitle sx={{ bgcolor: 'rgba(206, 10, 10, 0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+    <Typography variant="h6" sx={{ color: '#CE0A0A', fontWeight: 'bold' }}>
+      Estudiantes del programa: {selectedProgram?.Nombre_programa}
+    </Typography>
+    <IconButton onClick={handleCloseProgramModal} sx={{ color: '#CE0A0A' }}>
+      <CloseIcon />
+    </IconButton>
+  </DialogTitle>
+  <DialogContent dividers>
+    {programStudents.length === 0 ? (
+      <Alert severity="info">No se encontraron estudiantes para este programa.</Alert>
+    ) : (
+      <TableContainer>
+        <Table>
+          <TableHead>
+            <TableRow sx={{ backgroundColor: 'rgba(206, 10, 10, 0.05)' }}>
+              <TableCell sx={{ fontWeight: 'bold' }}>Documento</TableCell>
+              <TableCell sx={{ fontWeight: 'bold' }}>Nombre Completo</TableCell>
+              <TableCell sx={{ fontWeight: 'bold' }}>Email</TableCell> {/* Nueva columna */}
+              <TableCell sx={{ fontWeight: 'bold' }}>Módulos</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {programStudents.map((stud, idx) => (
+              <TableRow key={idx} hover>
+                <TableCell>{`${stud.tipo_documento || ''} ${stud.numero_documento}`}</TableCell>
+                <TableCell>{`${stud.nombres} ${stud.apellidos}`}</TableCell>
+                <TableCell>{stud.email || '-'}</TableCell> {/* Mostrar email */}
+                <TableCell>{stud.modulos && stud.modulos.length > 0 ? stud.modulos.join(', ') : '-'}</TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </TableContainer>
+    )}
+  </DialogContent>
+  <DialogActions>
+    <Button onClick={handleCloseProgramModal} sx={{ color: '#CE0A0A' }}>
+      Cerrar
+    </Button>
+  </DialogActions>
+</Dialog>
+      
+      {/* Modal para estudiantes del módulo */}
+      <Dialog open={openModuleModal} onClose={handleCloseModuleModal} fullWidth maxWidth="md">
+  <DialogTitle sx={{ bgcolor: 'rgba(206, 10, 10, 0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+    <Typography variant="h6" sx={{ color: '#CE0A0A', fontWeight: 'bold' }}>
+      Estudiantes del módulo: {selectedModule?.Nombre_modulo}
+    </Typography>
+    <IconButton onClick={handleCloseModuleModal} sx={{ color: '#CE0A0A' }}>
+      <CloseIcon />
+    </IconButton>
+  </DialogTitle>
+  <DialogContent dividers>
+    {loadingModuleStudents ? (
+      <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+        <CircularProgress sx={{ color: '#CE0A0A' }} />
+      </Box>
+    ) : moduleStudents.length === 0 ? (
+      <Alert severity="info">No se encontraron estudiantes para este módulo.</Alert>
+    ) : (
+      <TableContainer>
+        <Table>
+          <TableHead>
+            <TableRow sx={{ backgroundColor: 'rgba(206, 10, 10, 0.05)' }}>
+              <TableCell sx={{ fontWeight: 'bold' }}>Documento</TableCell>
+              <TableCell sx={{ fontWeight: 'bold' }}>Nombre Completo</TableCell>
+              <TableCell sx={{ fontWeight: 'bold' }}>Email</TableCell>
+              <TableCell sx={{ fontWeight: 'bold' }}>Asignaturas</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {moduleStudents.map((estudiante, idx) => (
+              <TableRow key={`est-${estudiante.id_estudiante}-${idx}`} hover>
+                <TableCell>{`${estudiante.tipo_documento || ''} ${estudiante.numero_documento}`}</TableCell>
+                <TableCell>{`${estudiante.nombres} ${estudiante.apellidos}`}</TableCell>
+                <TableCell>{estudiante.email || '-'}</TableCell>
+                <TableCell>
+                  {estudiante.asignaturas && estudiante.asignaturas.length > 0 ? (
+                    <Box component="ul" sx={{ 
+                      listStyle: 'none', 
+                      padding: 0, 
+                      margin: 0,
+                      maxHeight: '120px',
+                      overflowY: 'auto'
+                    }}>
+                      {estudiante.asignaturas.map((asig, i) => (
                         <Box 
+                          component="li" 
+                          key={`asig-${asig.Id_Asignatura}-${i}`}
                           sx={{ 
-                            display: 'inline-block',
-                            px: 2, 
-                            py: 0.5, 
-                            borderRadius: 1,
-                            fontWeight: 'bold',
-                            bgcolor: getNotaColor(stud.Nota_Final) + '10', // Agregar transparencia
-                            color: getNotaColor(stud.Nota_Final),
-                            border: `1px solid ${getNotaColor(stud.Nota_Final)}30`
+                            py: 0.5,
+                            borderBottom: i < estudiante.asignaturas.length - 1 ? '1px solid rgba(0,0,0,0.1)' : 'none'
                           }}
                         >
-                          {Number(stud.Nota_Final).toFixed(2)}
+                          {asig.Nombre_asignatura}
                         </Box>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </TableContainer>
-          )}
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleCloseAsignaturaModal} sx={{ color: '#CE0A0A' }}>
-            Cerrar
-          </Button>
-        </DialogActions>
-      </Dialog>
+                      ))}
+                    </Box>
+                  ) : (
+                    'No tiene asignaturas en este módulo'
+                  )}
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </TableContainer>
+    )}
+  </DialogContent>
+  <DialogActions>
+    <Button 
+      onClick={handleCloseModuleModal} 
+      sx={{ 
+        color: '#CE0A0A',
+        '&:hover': {
+          backgroundColor: 'rgba(206, 10, 10, 0.08)'
+        }
+      }}
+    >
+      Cerrar
+    </Button>
+  </DialogActions>
+</Dialog>
+      
+    
+      {/* Modal para estudiantes de asignatura */}
+<Dialog open={openAsignaturaModal} onClose={handleCloseAsignaturaModal} fullWidth maxWidth="md">
+  <DialogTitle sx={{ bgcolor: 'rgba(206, 10, 10, 0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+    <Typography variant="h6" sx={{ color: '#CE0A0A', fontWeight: 'bold' }}>
+      Estudiantes de la asignatura: {selectedAsignatura?.Nombre_asignatura}
+    </Typography>
+    <IconButton onClick={handleCloseAsignaturaModal} sx={{ color: '#CE0A0A' }}>
+      <CloseIcon />
+    </IconButton>
+  </DialogTitle>
+  <DialogContent dividers>
+    {loadingAsignaturaStudents ? (
+      <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+        <CircularProgress sx={{ color: '#CE0A0A' }} />
+      </Box>
+    ) : asignaturaStudents.length === 0 ? (
+      <Alert severity="info">No se encontraron estudiantes para esta asignatura.</Alert>
+    ) : (
+      <TableContainer>
+        <Table>
+          <TableHead>
+            <TableRow sx={{ backgroundColor: 'rgba(206, 10, 10, 0.05)' }}>
+              <TableCell sx={{ fontWeight: 'bold' }}>Documento</TableCell>
+              <TableCell sx={{ fontWeight: 'bold' }}>Nombre Completo</TableCell>
+              <TableCell sx={{ fontWeight: 'bold' }}>Email</TableCell> {/* Nueva columna */}
+              <TableCell sx={{ fontWeight: 'bold' }}>Nota Final</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {asignaturaStudents.map((stud, idx) => (
+              <TableRow key={idx} hover>
+                <TableCell>{`${stud.tipo_documento || ''} ${stud.numero_documento}`}</TableCell>
+                <TableCell>{`${stud.nombres} ${stud.apellidos}`}</TableCell>
+                <TableCell>{stud.email || '-'}</TableCell> 
+                <TableCell>{stud.Nota_Final || '-'}</TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </TableContainer>
+    )}
+  </DialogContent>
+  <DialogActions>
+    <Button onClick={handleCloseAsignaturaModal} sx={{ color: '#CE0A0A' }}>
+      Cerrar
+    </Button>
+  </DialogActions>
+</Dialog>
+
     </Box>
   );
 };
