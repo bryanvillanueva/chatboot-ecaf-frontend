@@ -21,15 +21,19 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
-  Collapse,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails,
   Divider
 } from '@mui/material';
-import { KeyboardArrowDown, KeyboardArrowUp, Close as CloseIcon } from '@mui/icons-material';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import CloseIcon from '@mui/icons-material/Close';
 import Navbar from '../components/Navbar';
 
 const InfoProgramas = () => {
   // Estados principales
   const [programas, setProgramas] = useState([]);
+  const [programasAgrupados, setProgramasAgrupados] = useState([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
@@ -44,11 +48,14 @@ const InfoProgramas = () => {
   const [expandedModules, setExpandedModules] = useState({});
   const [modulesByProgram, setModulesByProgram] = useState({});
   const [asignaturasByModule, setAsignaturasByModule] = useState({});
+    const [expandedModulos, setExpandedModulos] = useState({});
+
 
   // Modal para estudiantes a nivel de programa
   const [openProgramModal, setOpenProgramModal] = useState(false);
   const [selectedProgram, setSelectedProgram] = useState(null);
   const [programStudents, setProgramStudents] = useState([]);
+  const [loadingProgramStudents, setLoadingProgramStudents] = useState(false);
 
   // Modal para estudiantes de un módulo
   const [openModuleModal, setOpenModuleModal] = useState(false);
@@ -56,23 +63,83 @@ const InfoProgramas = () => {
   const [moduleStudents, setModuleStudents] = useState([]);
   const [loadingModuleStudents, setLoadingModuleStudents] = useState(false);
 
-  // Modal para estudiantes de una asignatura específica
-  const [openAsignaturaModal, setOpenAsignaturaModal] = useState(false);
-  const [selectedAsignatura, setSelectedAsignatura] = useState(null);
-  const [asignaturaStudents, setAsignaturaStudents] = useState([]);
-  const [loadingAsignaturaStudents, setLoadingAsignaturaStudents] = useState(false);
 
   
-
   useEffect(() => {
     fetchProgramas();
   }, []);
+
+  // Función para agrupar programas con el mismo nombre
+  const agruparProgramas = (listaProgramas) => {
+    const grupos = {};
+    
+    // Agrupar por nombre de programa
+    listaProgramas.forEach(programa => {
+      const nombrePrograma = programa.Nombre_programa;
+      
+      if (!grupos[nombrePrograma]) {
+        grupos[nombrePrograma] = {
+          Nombre_programa: nombrePrograma,
+          Estado: programa.Estado,
+          Incluye_Modulos: programa.Incluye_Modulos,
+          Fecha_Inicio_programa: programa.Fecha_Inicio_programa,
+          Fecha_Fin_programa: programa.Fecha_Fin_programa,
+          // Creamos un array de IDs para mantener referencia a todos los programas con este nombre
+          ids: [programa.Id_Programa]
+        };
+      } else {
+        // Si el programa ya existe, añadimos el ID a la lista de IDs
+        grupos[nombrePrograma].ids.push(programa.Id_Programa);
+        
+        // Si los estados son diferentes, mostramos "Varios"
+        if (grupos[nombrePrograma].Estado !== programa.Estado) {
+          grupos[nombrePrograma].Estado = "Varios";
+        }
+        
+        // Actualizamos Incluye_Modulos si al menos uno tiene módulos
+        if (programa.Incluye_Modulos) {
+          grupos[nombrePrograma].Incluye_Modulos = true;
+        }
+      }
+    });
+    
+    // Convertimos el objeto de grupos a un array
+    return Object.values(grupos);
+  };
+
+  // Función para agrupar asignaturas con el mismo nombre
+  const agruparAsignaturas = (listaAsignaturas) => {
+    const grupos = {};
+    
+    // Agrupar por nombre de asignatura
+    listaAsignaturas.forEach(asignatura => {
+      const nombreAsignatura = asignatura.Nombre_asignatura;
+      
+      if (!grupos[nombreAsignatura]) {
+        grupos[nombreAsignatura] = {
+          ...asignatura,
+          // Creamos un array de IDs para mantener referencia a todas las asignaturas con este nombre
+          ids: [asignatura.Id_Asignatura]
+        };
+      } else {
+        // Si la asignatura ya existe, añadimos el ID a la lista de IDs
+        grupos[nombreAsignatura].ids.push(asignatura.Id_Asignatura);
+      }
+    });
+    
+    // Convertimos el objeto de grupos a un array
+    return Object.values(grupos);
+  };
 
   const fetchProgramas = async () => {
     try {
       setLoading(true);
       const res = await axios.get('https://webhook-ecaf-production.up.railway.app/api/programas');
       setProgramas(res.data);
+      
+      // Agrupamos los programas con el mismo nombre
+      const agrupados = agruparProgramas(res.data);
+      setProgramasAgrupados(agrupados);
     } catch (err) {
       console.error('❌ Error al obtener programas:', err);
       setSnackbar({
@@ -94,12 +161,15 @@ const InfoProgramas = () => {
 
   const handleCloseSnackbar = () => setSnackbar({ ...snackbar, open: false });
 
+
   // Toggle expand/collapse para módulos de un programa
   const toggleExpandProgram = async (programId) => {
+
     setExpandedPrograms(prev => ({
       ...prev,
-      [programId]: !prev[programId]
+      [programaNombre]: !isExpanded
     }));
+
     
     // Si se expande y no se han cargado los módulos, hacer la consulta
     if (!expandedPrograms[programId] && !modulesByProgram[programId]) {
@@ -156,12 +226,14 @@ const InfoProgramas = () => {
       // No hacemos llamada a API aquí ya que las asignaturas fueron pre-cargadas
       console.log('Las asignaturas deberían estar pre-cargadas para el módulo:', moduleId);
     }
+
   };
 
   // Modal para estudiantes asociados a un programa
   const handleOpenProgramModal = (program) => {
     setSelectedProgram(program);
     setOpenProgramModal(true);
+
     axios.get(`https://webhook-ecaf-production.up.railway.app/api/programas/${program.Id_Programa}/estudiantes`)
       .then(res => {
         // Agrupar estudiantes: cada estudiante aparece una sola vez
@@ -187,7 +259,21 @@ const InfoProgramas = () => {
       .catch(err => {
         console.error('❌ Error al obtener estudiantes del programa:', err);
         setSnackbar({ open: true, message: 'Error al cargar estudiantes del programa', severity: 'error' });
+
       });
+      
+      setProgramStudents(Object.values(agrupados));
+      setLoadingProgramStudents(false);
+    })
+    .catch(err => {
+      console.error('❌ Error al obtener estudiantes del programa:', err);
+      setSnackbar({
+        open: true,
+        message: 'Error al cargar estudiantes del programa',
+        severity: 'error'
+      });
+      setLoadingProgramStudents(false);
+    });
   };
 
   const handleCloseProgramModal = () => {
@@ -230,22 +316,51 @@ const handleOpenModuleModal = (module) => {
     setSelectedAsignatura(asignatura);
     setOpenAsignaturaModal(true);
     setLoadingAsignaturaStudents(true);
-    axios.get(`https://webhook-ecaf-production.up.railway.app/api/asignaturas/${asignatura.Id_Asignatura}/estudiantes`)
-      .then(res => {
-        setAsignaturaStudents(res.data);
-        setLoadingAsignaturaStudents(false);
-      })
-      .catch(err => {
-        console.error('❌ Error al obtener estudiantes de la asignatura:', err);
-        setSnackbar({ open: true, message: 'Error al cargar estudiantes de la asignatura', severity: 'error' });
-        setLoadingAsignaturaStudents(false);
+    
+    // Obtenemos estudiantes para todos los IDs de asignatura con este nombre
+    Promise.all(asignatura.ids.map(id => 
+      axios.get(`https://webhook-ecaf-production.up.railway.app/api/asignaturas/${id}/estudiantes`)
+    ))
+    .then(responses => {
+      // Combinamos los estudiantes de todas las asignaturas
+      const todosEstudiantes = responses.flatMap(res => res.data);
+      
+      // Agrupar estudiantes por documento para evitar duplicados
+      const estudiantesAgrupados = {};
+      todosEstudiantes.forEach(item => {
+        const key = item.numero_documento;
+        if (!estudiantesAgrupados[key]) {
+          estudiantesAgrupados[key] = { ...item };
+        }
       });
+      
+      setAsignaturaStudents(Object.values(estudiantesAgrupados));
+      setLoadingAsignaturaStudents(false);
+    })
+    .catch(err => {
+      console.error('❌ Error al obtener estudiantes de la asignatura:', err);
+      setSnackbar({
+        open: true,
+        message: 'Error al cargar estudiantes de la asignatura',
+        severity: 'error'
+      });
+      setLoadingAsignaturaStudents(false);
+    });
   };
 
   const handleCloseAsignaturaModal = () => {
     setOpenAsignaturaModal(false);
     setSelectedAsignatura(null);
     setAsignaturaStudents([]);
+  };
+
+  // Función para colorear la nota
+  const getNotaColor = (nota) => {
+    const notaNum = Number(nota);
+    if (notaNum >= 4.5) return '#4CAF50'; // Verde
+    if (notaNum >= 3.5) return '#8BC34A'; // Verde claro
+    if (notaNum >= 3.0) return '#FFC107'; // Amarillo
+    return '#F44336'; // Rojo
   };
 
   return (
@@ -261,46 +376,54 @@ const handleOpenModuleModal = (module) => {
             <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
               <CircularProgress sx={{ color: '#CE0A0A' }} />
             </Box>
-          ) : programas.length === 0 ? (
+          ) : programasAgrupados.length === 0 ? (
             <Alert severity="info">No se encontraron programas.</Alert>
           ) : (
-            <TableContainer>
-              <Table sx={{ minWidth: 650 }}>
-                <TableHead>
-                  <TableRow sx={{ backgroundColor: 'rgba(206, 10, 10, 0.05)' }}>
-                    <TableCell sx={{ fontWeight: 'bold' }} />
-                    <TableCell sx={{ fontWeight: 'bold' }}>Nombre</TableCell>
-                    <TableCell sx={{ fontWeight: 'bold' }}>Incluye Módulos</TableCell>
-                    <TableCell sx={{ fontWeight: 'bold' }}>Estado</TableCell>
-                    <TableCell sx={{ fontWeight: 'bold' }}>Fechas</TableCell>
-                    <TableCell sx={{ fontWeight: 'bold' }}>Acciones</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {programas
-                    .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-                    .map((prog) => [
-                      <TableRow key={`prog-${prog.Id_Programa}`} hover>
-                        <TableCell>
-                          <IconButton size="small" onClick={() => toggleExpandProgram(prog.Id_Programa)}>
-                            {expandedPrograms[prog.Id_Programa] ? <KeyboardArrowUp /> : <KeyboardArrowDown />}
-                          </IconButton>
-                        </TableCell>
-                        <TableCell>{prog.Nombre_programa}</TableCell>
-                        <TableCell>{prog.Incluye_Modulos ? 'Sí' : 'No'}</TableCell>
-                        <TableCell>{prog.Estado}</TableCell>
-                        <TableCell>
-                          {prog.Fecha_Inicio_programa ? new Date(prog.Fecha_Inicio_programa).toLocaleDateString() : '-'} - {prog.Fecha_Fin_programa ? new Date(prog.Fecha_Fin_programa).toLocaleDateString() : '-'}
-                        </TableCell>
-                        <TableCell>
+            <>
+              {/* Cabecera para la sección de Programas */}
+              <Box sx={{ mb: 2 }}>
+                <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+                  Haz clic en un programa para ver sus módulos y asignaturas
+                </Typography>
+              </Box>
+
+              {/* Lista de programas con acordeones */}
+              {programasAgrupados
+                .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+                .map((programa, index) => (
+                  <Accordion 
+                    key={`programa-${index}`}
+                    expanded={expandedPrograms[programa.Nombre_programa] || false}
+                    onChange={() => handleExpandProgram(programa.Nombre_programa, programa.ids)}
+                    sx={{ mb: 1 }}
+                  >
+                    <AccordionSummary
+                      expandIcon={<ExpandMoreIcon />}
+                      sx={{ 
+                        bgcolor: 'rgba(206, 10, 10, 0.05)', 
+                        '&:hover': { bgcolor: 'rgba(206, 10, 10, 0.1)' },
+                        '&.Mui-expanded': { bgcolor: 'rgba(206, 10, 10, 0.1)' }
+                      }}
+                    >
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center' }}>
+                        <Typography sx={{ fontWeight: 'bold', flex: 1 }}>{programa.Nombre_programa}</Typography>
+                        <Box sx={{ mr: 2, display: 'flex', alignItems: 'center' }}>
                           <Button
                             variant="contained"
                             size="small"
-                            onClick={() => handleOpenProgramModal(prog)}
-                            sx={{ bgcolor: '#CE0A0A', '&:hover': { bgcolor: '#b00909' }, mr: 1 }}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleOpenProgramModal(programa);
+                            }}
+                            sx={{ 
+                              bgcolor: '#CE0A0A', 
+                              '&:hover': { bgcolor: '#b00909' },
+                              mr: 2
+                            }}
                           >
                             Ver Estudiantes
                           </Button>
+
                         </TableCell>
                       </TableRow>,
                       <TableRow key={`collapse-${prog.Id_Programa}`}>
@@ -405,30 +528,33 @@ const handleOpenModuleModal = (module) => {
                                   </TableBody>
                                 </Table>
                               )}
+
                             </Box>
-                          </Collapse>
-                        </TableCell>
-                      </TableRow>
-                    ])}
-                </TableBody>
-              </Table>
-            </TableContainer>
+                          )}
+                        </>
+                      )}
+                    </AccordionDetails>
+                  </Accordion>
+                ))}
+
+              <TablePagination
+                rowsPerPageOptions={[5, 10, 20]}
+                component="div"
+                count={programasAgrupados.length}
+                rowsPerPage={rowsPerPage}
+                page={page}
+                onPageChange={handleChangePage}
+                onRowsPerPageChange={handleChangeRowsPerPage}
+                labelRowsPerPage="Filas por página:"
+                labelDisplayedRows={({ from, to, count }) => `${from}-${to} de ${count}`}
+              />
+            </>
           )}
-          <TablePagination
-            rowsPerPageOptions={[5, 10, 20]}
-            component="div"
-            count={programas.length}
-            rowsPerPage={rowsPerPage}
-            page={page}
-            onPageChange={handleChangePage}
-            onRowsPerPageChange={handleChangeRowsPerPage}
-            labelRowsPerPage="Filas por página:"
-            labelDisplayedRows={({ from, to, count }) => `${from}-${to} de ${count}`}
-          />
         </Paper>
       </Container>
       
       {/* Snackbar para notificaciones */}
+
       <Snackbar
         open={snackbar.open}
         autoHideDuration={6000}
@@ -618,6 +744,7 @@ const handleOpenModuleModal = (module) => {
     </Button>
   </DialogActions>
 </Dialog>
+
     </Box>
   );
 };

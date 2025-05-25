@@ -21,9 +21,13 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails,
   Divider
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import Navbar from '../components/Navbar';
 
 const InfoEstudiantes = () => {
@@ -38,11 +42,13 @@ const InfoEstudiantes = () => {
     message: '',
     severity: 'error'
   });
-  // Estados para el modal de detalles (programas, módulos, asignaturas y notas)
+  // Estados para el modal de detalles
   const [openModal, setOpenModal] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [studentDetails, setStudentDetails] = useState([]);
   const [loadingDetails, setLoadingDetails] = useState(false);
+  // Estado para guardar los datos procesados y agrupados
+  const [datosAgrupados, setDatosAgrupados] = useState({});
 
   useEffect(() => {
     fetchEstudiantes();
@@ -88,15 +94,46 @@ const InfoEstudiantes = () => {
     setOpenModal(false);
     setSelectedStudent(null);
     setStudentDetails([]);
+    setDatosAgrupados({});
+  };
+
+  // Función para agrupar los datos por programa y módulo
+  const procesarDatosEstudiante = (datos) => {
+    const programas = {};
+    
+    datos.forEach(item => {
+      const programaKey = item.Nombre_programa;
+      const moduloKey = item.Nombre_modulo || 'Sin módulo';
+      
+      // Si el programa no existe, lo inicializamos
+      if (!programas[programaKey]) {
+        programas[programaKey] = {};
+      }
+      
+      // Si el módulo no existe en el programa, lo inicializamos
+      if (!programas[programaKey][moduloKey]) {
+        programas[programaKey][moduloKey] = [];
+      }
+      
+      // Agregamos la asignatura al módulo correspondiente
+      programas[programaKey][moduloKey].push({
+        nombre: item.Nombre_asignatura,
+        nota: Number(item.Nota_Final) // Convertir a número aquí
+      });
+    });
+    
+    return programas;
   };
 
   useEffect(() => {
     if (selectedStudent && openModal) {
       setLoadingDetails(true);
-      // Se utiliza el número de documento del estudiante para obtener los detalles con el nuevo endpoint.
       axios.get(`https://webhook-ecaf-production.up.railway.app/api/estudiantes/${selectedStudent.numero_documento}/asignaciones`)
         .then(res => {
           setStudentDetails(res.data);
+          // Procesamos y agrupamos los datos
+          const datosProc = procesarDatosEstudiante(res.data);
+          setDatosAgrupados(datosProc);
           setLoadingDetails(false);
         })
         .catch(err => {
@@ -116,6 +153,14 @@ const InfoEstudiantes = () => {
     if (!dateString) return '';
     const date = new Date(dateString);
     return date.toLocaleDateString('es-ES');
+  };
+
+  // Función para obtener el color de la nota
+  const getNotaColor = (nota) => {
+    if (nota >= 4.5) return '#4CAF50'; // Verde
+    if (nota >= 3.5) return '#8BC34A'; // Verde claro
+    if (nota >= 3.0) return '#FFC107'; // Amarillo
+    return '#F44336'; // Rojo
   };
 
   return (
@@ -221,7 +266,7 @@ const InfoEstudiantes = () => {
           </IconButton>
         }
       />
-      {/* Modal para ver detalles (Programas, Módulos, Asignaturas y Notas) */}
+      {/* Modal para ver detalles utilizando Accordion de Material UI */}
       <Dialog
         open={openModal}
         onClose={handleCloseModal}
@@ -248,33 +293,111 @@ const InfoEstudiantes = () => {
               <Typography variant="subtitle1" sx={{ mb: 2, fontWeight: 'bold', color: '#CE0A0A' }}>
                 Asignaciones para: {selectedStudent && `${selectedStudent.nombres} ${selectedStudent.apellidos}`}
               </Typography>
-              <TableContainer>
-                <Table>
-                  <TableHead>
-                    <TableRow sx={{ backgroundColor: 'rgba(206, 10, 10, 0.05)' }}>
-                      <TableCell sx={{ fontWeight: 'bold' }}>Programa</TableCell>
-                      <TableCell sx={{ fontWeight: 'bold' }}>Módulo</TableCell>
-                      <TableCell sx={{ fontWeight: 'bold' }}>Asignatura</TableCell>
-                      <TableCell sx={{ fontWeight: 'bold' }}>Nota Final</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {studentDetails.map((item, index) => (
-                      <TableRow key={index} hover>
-                        <TableCell>{item.Nombre_programa}</TableCell>
-                        <TableCell>{item.Nombre_modulo || '-'}</TableCell>
-                        <TableCell>{item.Nombre_asignatura}</TableCell>
-                        <TableCell>{item.Nota_Final}</TableCell>
-                      </TableRow>
+              
+              {/* Cabecera para la sección de Programas */}
+              <Box sx={{ mb: 2, mt: 1 }}>
+                <Typography variant="h6" sx={{ color: '#CE0A0A', fontWeight: 'bold' }}>
+                  Programas
+                </Typography>
+                <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+                  Haz clic en un programa para ver sus módulos
+                </Typography>
+              </Box>
+
+              {/* Programas (primer nivel) */}
+              {Object.keys(datosAgrupados).map((programa, indexPrograma) => (
+                <Accordion key={`programa-${indexPrograma}`} sx={{ mb: 1 }}>
+                  <AccordionSummary
+                    expandIcon={<ExpandMoreIcon />}
+                    sx={{ 
+                      bgcolor: 'rgba(206, 10, 10, 0.05)', 
+                      '&:hover': { bgcolor: 'rgba(206, 10, 10, 0.1)' },
+                      '&.Mui-expanded': { bgcolor: 'rgba(206, 10, 10, 0.1)' }
+                    }}
+                  >
+                    <Typography sx={{ fontWeight: 'bold' }}>{programa}</Typography>
+                  </AccordionSummary>
+                  <AccordionDetails sx={{ p: 0, pt: 1 }}>
+                    {/* Cabecera para la sección de Módulos */}
+                    <Box sx={{ p: 2, bgcolor: 'rgba(206, 10, 10, 0.02)' }}>
+                      <Typography variant="subtitle1" sx={{ fontWeight: 'bold', color: '#CE0A0A' }}>
+                        Módulos
+                      </Typography>
+                      <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+                        Haz clic en un módulo para ver sus asignaturas
+                      </Typography>
+                    </Box>
+                    
+                    {/* Módulos (segundo nivel) */}
+                    {Object.keys(datosAgrupados[programa]).map((modulo, indexModulo) => (
+                      <Accordion 
+                        key={`modulo-${indexPrograma}-${indexModulo}`} 
+                        disableGutters
+                        sx={{ boxShadow: 'none', '&:before': { display: 'none' } }}
+                      >
+                        <AccordionSummary
+                          expandIcon={<ExpandMoreIcon />}
+                          sx={{ 
+                            pl: 3, 
+                            bgcolor: 'rgba(206, 10, 10, 0.02)', 
+                            '&:hover': { bgcolor: 'rgba(206, 10, 10, 0.05)' },
+                            '&.Mui-expanded': { bgcolor: 'rgba(206, 10, 10, 0.05)' }
+                          }}
+                        >
+                          <Typography sx={{ fontWeight: '500' }}>{modulo}</Typography>
+                        </AccordionSummary>
+                        <AccordionDetails sx={{ p: 0 }}>
+                          {/* Tabla de asignaturas y notas */}
+                          <TableContainer>
+                            <Table size="small">
+                              <TableHead>
+                                <TableRow sx={{ backgroundColor: 'rgba(206, 10, 10, 0.03)' }}>
+                                  <TableCell sx={{ fontWeight: 'bold', pl: 6 }}>Asignatura</TableCell>
+                                  <TableCell sx={{ fontWeight: 'bold' }}>Nota Final</TableCell>
+                                </TableRow>
+                              </TableHead>
+                              <TableBody>
+                                {datosAgrupados[programa][modulo].map((asignatura, indexAsignatura) => (
+                                  <TableRow key={`asignatura-${indexPrograma}-${indexModulo}-${indexAsignatura}`} hover>
+                                    <TableCell sx={{ pl: 6 }}>{asignatura.nombre}</TableCell>
+                                    <TableCell>
+                                      <Box 
+                                        sx={{ 
+                                          display: 'inline-block',
+                                          px: 2, 
+                                          py: 0.5, 
+                                          borderRadius: 1,
+                                          fontWeight: 'bold',
+                                          bgcolor: getNotaColor(asignatura.nota) + '10', // Agregar transparencia
+                                          color: getNotaColor(asignatura.nota),
+                                          border: `1px solid ${getNotaColor(asignatura.nota)}30`
+                                        }}
+                                      >
+                                        {asignatura.nota.toFixed(2)}
+                                      </Box>
+                                    </TableCell>
+                                  </TableRow>
+                                ))}
+                              </TableBody>
+                            </Table>
+                          </TableContainer>
+                        </AccordionDetails>
+                      </Accordion>
                     ))}
-                  </TableBody>
-                </Table>
-              </TableContainer>
+                  </AccordionDetails>
+                </Accordion>
+              ))}
             </>
           )}
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleCloseModal} sx={{ color: '#CE0A0A' }}>
+          <Button 
+            onClick={handleCloseModal} 
+            sx={{ 
+              color: '#CE0A0A',
+              '&:hover': { bgcolor: 'rgba(206, 10, 10, 0.05)' }
+            }}
+          >
             Cerrar
           </Button>
         </DialogActions>
