@@ -4,494 +4,341 @@ import {
   Box, 
   Card, 
   CardContent, 
-  CardHeader, 
-  Tabs, 
-  Tab, 
-  Alert, 
-  AlertTitle, 
-  LinearProgress, 
   Typography,
-  Paper,
+  Tabs,
+  Tab,
   Fade,
-  Zoom,
-  Grid,
-  Dialog,
-  DialogContent,
-  DialogTitle,
+  Alert,
+  LinearProgress,
+  Button,
   IconButton,
-  Stepper,
-  Step,
-  StepLabel,
-  StepContent,
+  Tooltip,
+  Chip,
+  Stack,
   useTheme,
-  useMediaQuery,
-  Button
+  useMediaQuery
 } from '@mui/material';
 import { 
   CloudUpload as CloudUploadIcon, 
-  InsertDriveFile as InsertDriveFileIcon, 
-  CheckCircle as CheckCircleIcon, 
-  Warning as WarningIcon,
-  Backup as BackupIcon,
-  Description as DescriptionIcon,
   School as SchoolIcon,
   MenuBook as MenuBookIcon,
+  WorkspacePremium as WorkspacePremiumIcon,
   HelpOutline as HelpIcon,
-  Close as CloseIcon
+  FileDownload as FileDownloadIcon,
+  CheckCircle as CheckCircleIcon,
+  Warning as WarningIcon,
+  Info as InfoIcon
 } from '@mui/icons-material';
 import EstudiantesUploader from './EstudiantesUploader';
 import NotasUploader from './NotasUploader';
+import DiplomasUploader from './DiplomasUploader';
 import Navbar from '../components/Navbar';
-import './CargaExcel.css';
 
 const CargaExcel = ({ pageTitle }) => {
   const [activeTab, setActiveTab] = useState(0);
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
-  const [helpOpen, setHelpOpen] = useState(false);
   const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
 
   const handleTabChange = (event, newValue) => {
     setActiveTab(newValue);
+    setResult(null); // Limpiar resultados al cambiar tab
   };
 
-  const handleOpenHelp = () => {
-    setHelpOpen(true);
-  };
+  // Información simplificada de las pestañas
+  const tabsInfo = [
+    {
+      id: 0,
+      label: 'Estudiantes',
+      icon: <SchoolIcon />,
+      description: 'Cargar información personal de estudiantes',
+      fields: ['Documento', 'Nombres', 'Apellidos', 'Email'],
+      templateUrl: 'https://ecafescuela.com/plantilla_excel/Plantilla_Estudiantes.xlsx',
+      color: '#2196F3'
+    },
+    {
+      id: 1,
+      label: 'Programas y Notas',
+      icon: <MenuBookIcon />,
+      description: 'Cargar programas académicos, módulos y calificaciones',
+      fields: ['Estudiante', 'Programa', 'Módulo', 'Asignatura', 'Nota'],
+      templateUrl: 'https://ecafescuela.com/plantilla_excel/Plantilla_Programas.xlsx',
+      color: '#FF9800'
+    },
+    {
+      id: 2,
+      label: 'Diplomas',
+      icon: <WorkspacePremiumIcon />,
+      description: 'Cargar registro y gestión de diplomas académicos',
+      fields: ['ID', 'Graduado', 'Tipo Diploma', 'Modalidad', 'Fecha Grado'],
+      templateUrl: 'https://ecafescuela.com/plantilla_excel/Plantilla_Diplomas.xlsx',
+      color: '#9C27B0'
+    }
+  ];
 
-  const handleCloseHelp = () => {
-    setHelpOpen(false);
-  };
+  const currentTab = tabsInfo[activeTab];
 
-  // Función para mostrar la notificación de resultado
+  // Renderizar resultado con estilo moderno
   const renderResult = () => {
     if (!result) return null;
 
     return (
-      <Zoom in={true}>
+      <Fade in={true}>
         <Alert 
           severity={result.success ? 'success' : 'error'} 
-          className="result-alert"
-          onClose={() => setResult(null)} 
+          onClose={() => setResult(null)}
+          icon={result.success ? <CheckCircleIcon /> : <WarningIcon />}
           sx={{ 
-            mt: 2, 
-            mb: 2,
-            boxShadow: 3,
+            mb: 3,
             borderRadius: 2,
-            position: 'relative',
-            overflow: 'hidden',
-            '&::before': {
-              content: '""',
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              width: '6px',
-              height: '100%',
-              backgroundColor: result.success ? 'success.main' : 'error.main'
+            '& .MuiAlert-message': {
+              width: '100%'
             }
           }}
-          icon={result.success ? <CheckCircleIcon fontSize="inherit" /> : <WarningIcon fontSize="inherit" />}
         >
-          <AlertTitle sx={{ fontWeight: 'bold' }}>
-            {result.success ? 'Operación Exitosa' : 'Error'}
-          </AlertTitle>
-          <Typography>{result.message}</Typography>
+          <Typography variant="subtitle1" fontWeight={600}>
+            {result.success ? '¡Perfecto!' : 'Algo salió mal'}
+          </Typography>
+          <Typography variant="body2" sx={{ mt: 1 }}>
+            {result.message}
+          </Typography>
           {result.details && (
-            <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+            <Typography variant="caption" display="block" sx={{ mt: 1, opacity: 0.8 }}>
               {result.details}
             </Typography>
           )}
         </Alert>
-      </Zoom>
+      </Fade>
     );
   };
 
   return (
-    <Box>
-      <Navbar pageTitle={pageTitle || "Carga de Información"} />
+    <Box sx={{ minHeight: '100vh', bgcolor: '#fafafa' }}>
+      <Navbar pageTitle={pageTitle || "Carga de Datos"} />
       
-      <Box sx={{ pt: 8, px: 2 }}>
-        <Box className="page-header" sx={{ mb: 4, textAlign: 'center' }}>
-          <Typography variant="h4" component="h1" gutterBottom className="page-title">
-            Carga de Información Académica
+      <Container maxWidth="lg" sx={{ py: 4 }}>
+        {/* Header moderno y limpio */}
+        <Box textAlign="center" mb={4}>
+          <Typography 
+            variant="h3" 
+            component="h1" 
+            fontWeight={700}
+            sx={{ 
+              background: 'linear-gradient(45deg, #CE0A0A 30%, #FF6B6B 90%)',
+              backgroundClip: 'text',
+              WebkitBackgroundClip: 'text',
+              color: 'transparent',
+              mb: 1
+            }}
+          >
+            Importar Datos
           </Typography>
-          <Typography variant="subtitle1" color="text.secondary" sx={{ maxWidth: '700px', mx: 'auto' }}>
-            Este módulo permite importar información académica a la base de datos utilizando archivos Excel.
+          <Typography variant="h6" color="text.secondary" fontWeight={400}>
+            Carga información académica de forma rápida y sencilla
           </Typography>
         </Box>
-        
-        <Fade in={true}>
-          <Box>          
-            {renderResult()}
-            
-            <Card 
-              elevation={4} 
-              sx={{
-                borderRadius: 3,
-                overflow: 'hidden',
-                boxShadow: '0 8px 24px rgba(206, 10, 10, 0.12)',
-                border: '1px solid rgba(206, 10, 10, 0.08)'
-              }}
-            >
-              <CardHeader 
-                sx={{ 
-                  background: 'linear-gradient(45deg, #CE0A0A 30%, #ed403d 90%)', 
-                  color: 'white',
-                  position: 'relative'
-                }}
-                title={
-                  <Box sx={{ position: 'relative' }}>
-                    <Tabs 
-                      value={activeTab} 
-                      onChange={handleTabChange} 
-                      indicatorColor="secondary"
-                      textColor="inherit"
-                      variant="fullWidth"
-                      sx={{
-                        '& .MuiTab-root': {
-                          color: 'rgba(255, 255, 255, 0.7)',
-                          '&.Mui-selected': {
-                            color: 'white',
-                            fontWeight: 'bold'
-                          }
-                        }
-                      }}
-                    >
-                      <Tab 
-                        icon={<SchoolIcon />} 
-                        label="Información de Estudiantes" 
-                        iconPosition="start"
-                      />
-                      <Tab 
-                        icon={<MenuBookIcon />} 
-                        label="Programas, Materias y Notas" 
-                        iconPosition="start"
-                      />
-                    </Tabs>
-                    <IconButton 
-                      sx={{ 
-                        position: 'absolute', 
-                        right: -12, 
-                        top: '50%', 
-                        transform: 'translateY(-50%)',
-                        color: 'white',
-                        backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                        '&:hover': {
-                          backgroundColor: 'rgba(255, 255, 255, 0.2)',
-                        }
-                      }}
-                      onClick={handleOpenHelp}
-                      aria-label="Ayuda"
-                      size="small"
-                    >
-                      <HelpIcon fontSize="small" />
-                    </IconButton>
-                  </Box>
-                }
-              />
-              <CardContent sx={{ p: 0 }}>
-                {loading && (
-                  <Box sx={{ width: '100%' }}>
-                    <LinearProgress 
-                      sx={{ 
-                        height: 6, 
-                        '& .MuiLinearProgress-bar': {
-                          transition: 'transform 0.4s linear'
-                        }
-                      }} 
-                    />
-                    <Typography align="center" sx={{ mt: 1, mb: 2, fontWeight: 'medium' }}>
-                      Procesando archivo... Por favor espere.
-                    </Typography>
-                  </Box>
-                )}
 
-                <Box sx={{ p: 3 }}>
+        {/* Tabs modernos */}
+        <Card elevation={0} sx={{ border: '1px solid', borderColor: 'divider', mb: 3 }}>
+          <Tabs
+            value={activeTab}
+            onChange={handleTabChange}
+            variant="fullWidth"
+            sx={{
+              borderBottom: '1px solid',
+              borderColor: 'divider',
+              '& .MuiTab-root': {
+                minHeight: 80,
+                textTransform: 'none',
+                fontSize: '1rem',
+                fontWeight: 500,
+                '&.Mui-selected': {
+                  color: currentTab.color,
+                  fontWeight: 600
+                }
+              },
+              '& .MuiTabs-indicator': {
+                backgroundColor: currentTab.color,
+                height: 3
+              }
+            }}
+          >
+            {tabsInfo.map((tab) => (
+              <Tab
+                key={tab.id}
+                icon={tab.icon}
+                label={tab.label}
+                iconPosition="start"
+                sx={{
+                  '& .MuiSvgIcon-root': {
+                    color: activeTab === tab.id ? tab.color : 'text.secondary'
+                  }
+                }}
+              />
+            ))}
+          </Tabs>
+        </Card>
+
+        {/* Información contextual de la pestaña activa */}
+        <Fade in={true} key={activeTab}>
+          <Card 
+            elevation={0} 
+            sx={{ 
+              border: '1px solid', 
+              borderColor: 'divider',
+              borderLeftColor: currentTab.color,
+              borderLeftWidth: 4,
+              mb: 3 
+            }}
+          >
+            <CardContent>
+              <Stack direction="row" spacing={2} alignItems="center" mb={2}>
+                <Box 
+                  sx={{ 
+                    p: 1, 
+                    borderRadius: '50%', 
+                    bgcolor: `${currentTab.color}15`,
+                    color: currentTab.color 
+                  }}
+                >
+                  {currentTab.icon}
+                </Box>
+                <Box flex={1}>
+                  <Typography variant="h6" fontWeight={600}>
+                    {currentTab.description}
+                  </Typography>
+                  <Stack direction="row" spacing={1} mt={1} flexWrap="wrap">
+                    {currentTab.fields.map((field, index) => (
+                      <Chip 
+                        key={index}
+                        label={field} 
+                        size="small" 
+                        variant="outlined"
+                        sx={{ 
+                          borderColor: currentTab.color + '40',
+                          color: currentTab.color,
+                          fontSize: '0.75rem'
+                        }}
+                      />
+                    ))}
+                  </Stack>
+                </Box>
+                <Box>
+                  <Tooltip title="Descargar plantilla Excel">
+                    <Button
+                      variant="outlined"
+                      startIcon={<FileDownloadIcon />}
+                      href={currentTab.templateUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      sx={{
+                        borderColor: currentTab.color,
+                        color: currentTab.color,
+                        '&:hover': {
+                          borderColor: currentTab.color,
+                          bgcolor: currentTab.color + '08'
+                        }
+                      }}
+                    >
+                      Plantilla
+                    </Button>
+                  </Tooltip>
+                </Box>
+              </Stack>
+            </CardContent>
+          </Card>
+        </Fade>
+
+        {/* Área principal de contenido */}
+        <Card elevation={2} sx={{ borderRadius: 3, overflow: 'hidden' }}>
+          {loading && (
+            <LinearProgress 
+              sx={{ 
+                height: 3,
+                '& .MuiLinearProgress-bar': {
+                  backgroundColor: currentTab.color
+                }
+              }} 
+            />
+          )}
+
+          <CardContent sx={{ p: 0 }}>
+            {/* Mostrar resultado si existe */}
+            {result && (
+              <Box sx={{ p: 3, pb: 0 }}>
+                {renderResult()}
+              </Box>
+            )}
+
+            {/* Contenido de la pestaña */}
+            <Box sx={{ p: 3 }}>
+              <Fade in={true} timeout={300} key={activeTab}>
+                <Box>
                   {activeTab === 0 ? (
-                    <Fade in={activeTab === 0} timeout={500}>
-                      <Box>
-                        <EstudiantesUploader 
-                          setLoading={setLoading} 
-                          setResult={setResult} 
-                        />
-                      </Box>
-                    </Fade>
+                    <EstudiantesUploader 
+                      setLoading={setLoading} 
+                      setResult={setResult} 
+                    />
+                  ) : activeTab === 1 ? (
+                    <NotasUploader 
+                      setLoading={setLoading} 
+                      setResult={setResult} 
+                    />
                   ) : (
-                    <Fade in={activeTab === 1} timeout={500}>
-                      <Box>
-                        <NotasUploader 
-                          setLoading={setLoading} 
-                          setResult={setResult} 
-                        />
-                      </Box>
-                    </Fade>
+                    <DiplomasUploader 
+                      setLoading={setLoading} 
+                      setResult={setResult} 
+                    />
                   )}
                 </Box>
-              </CardContent>
-            </Card>
+              </Fade>
+            </Box>
+          </CardContent>
+        </Card>
 
-            {/* Sección de descarga de plantillas */}
-            <Paper 
-              elevation={3} 
-              sx={{ 
-                mt: 4, 
-                p: 3,
-                borderRadius: 3,
-                background: 'linear-gradient(to right bottom, #ffffff, #f9f9f9)',
-                border: '1px solid #f0f0f0'
-              }} 
-              className="info-section"
+        {/* Tips rápidos - Información mínima y útil */}
+        <Card 
+          elevation={0} 
+          sx={{ 
+            mt: 3, 
+            bgcolor: 'primary.main', 
+            color: 'white',
+            background: 'linear-gradient(135deg, #CE0A0A 0%, #FF6B6B 100%)'
+          }}
+        >
+          <CardContent>
+            <Stack 
+              direction={isMobile ? 'column' : 'row'} 
+              spacing={2} 
+              alignItems="center"
             >
-              <Box 
-                sx={{ 
-                  display: 'flex', 
-                  alignItems: 'center',
-                  mb: 2
-                }}
-              >
-                <InsertDriveFileIcon sx={{ mr: 1 }} color="primary" />
-                <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold' }}>
-                  Información sobre la Carga de Datos
+              <InfoIcon sx={{ fontSize: 28 }} />
+              <Box flex={1}>
+                <Typography variant="subtitle1" fontWeight={600}>
+                  ¿Primera vez usando el sistema?
+                </Typography>
+                <Typography variant="body2" sx={{ opacity: 0.9 }}>
+                  Descarga la plantilla, complétala con tus datos y súbela aquí. ¡Es así de simple!
                 </Typography>
               </Box>
-              
-              <Grid container spacing={3} sx={{ mt: 2 }}>
-                <Grid item xs={12} md={6}>
-                  <Card elevation={2} sx={{ 
-                    height: '100%', 
-                    transition: 'transform 0.3s',
-                    '&:hover': {
-                      transform: 'translateY(-5px)',
-                      boxShadow: '0 12px 20px rgba(0,0,0,0.1)'
-                    }
-                  }}>
-                    <CardHeader
-                      title="Información de Estudiantes"
-                      avatar={<SchoolIcon color="primary" />}
-                      sx={{ pb: 0 }}
-                    />
-                    <CardContent>
-                      <Typography variant="body2" color="text.secondary" paragraph>
-                        Utilice este módulo para cargar datos personales de los estudiantes:
-                      </Typography>
-                      <ul style={{ paddingLeft: '20px', marginTop: 0 }}>
-                        <li>Información básica (nombres, apellidos)</li>
-                        <li>Documentos de identidad</li>
-                        <li>Información de contacto</li>
-                        <li>Datos demográficos</li>
-                      </ul>
-                    </CardContent>
-                  </Card>
-                </Grid>
-                
-                <Grid item xs={12} md={6}>
-                  <Card elevation={2} sx={{ 
-                    height: '100%',
-                    transition: 'transform 0.3s',
-                    '&:hover': {
-                      transform: 'translateY(-5px)',
-                      boxShadow: '0 12px 20px rgba(0,0,0,0.1)'
-                    }
-                  }}>
-                    <CardHeader
-                      title="Programas, Materias y Notas"
-                      avatar={<MenuBookIcon color="primary" />}
-                      sx={{ pb: 0 }}
-                    />
-                    <CardContent>
-                      <Typography variant="body2" color="text.secondary" paragraph>
-                        Utilice este módulo para cargar:
-                      </Typography>
-                      <ul style={{ paddingLeft: '20px', marginTop: 0 }}>
-                        <li>Programas académicos</li>
-                        <li>Materias asociadas a programas</li>
-                        <li>Notas de estudiantes en materias</li>
-                        <li>Información académica periódica</li>
-                      </ul>
-                    </CardContent>
-                  </Card>
-                </Grid>
-              </Grid>
-
-              {/* Sección actualizada para descargar plantillas */}
-              <Box 
-                sx={{ 
-                  mt: 3, 
-                  p: 2, 
-                  backgroundColor: 'rgba(206, 10, 10, 0.06)', 
-                  color: 'primary.main',
-                  borderRadius: 2,
-                  border: '1px solid rgba(206, 10, 10, 0.2)'
+              <Button
+                variant="contained"
+                sx={{
+                  bgcolor: 'rgba(255,255,255,0.2)',
+                  backdropFilter: 'blur(10px)',
+                  '&:hover': {
+                    bgcolor: 'rgba(255,255,255,0.3)'
+                  }
                 }}
+                startIcon={<HelpIcon />}
               >
-                <Box>
-                  <Typography variant="body2" sx={{ mb: 1 }}>
-                    <strong>¿Necesitas las plantillas?</strong> Descarga las plantillas de Excel haciendo clic en los siguientes botones:
-                  </Typography>
-                  <Box sx={{ display: 'flex', gap: 2 }}>
-                    <Button
-                      variant="outlined"
-                      color="primary"
-                      href="https://ecafescuela.com/plantilla_excel/Plantilla_Estudiantes.xslx"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      Plantilla Estudiantes
-                    </Button>
-                    <Button
-                      variant="outlined"
-                      color="primary"
-                      href="https://ecafescuela.com/plantilla_excel/Plantilla_Programas.xslx"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      Plantilla Programas
-                    </Button>
-                  </Box>
-                </Box>
-              </Box>
-            </Paper>
-          </Box>
-        </Fade>
-      </Box>
-
-      {/* Diálogo de ayuda con pasos */}
-      <Dialog 
-        open={helpOpen} 
-        onClose={handleCloseHelp}
-        maxWidth="md"
-        fullWidth
-        sx={{
-          '& .MuiDialog-paper': {
-            borderRadius: 3,
-            overflow: 'hidden'
-          }
-        }}
-      >
-        <DialogTitle sx={{ 
-          backgroundColor: theme.palette.primary.main, 
-          color: 'white',
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center'
-        }}>
-          <Box sx={{ display: 'flex', alignItems: 'center' }}>
-            <HelpIcon sx={{ mr: 1 }} />
-            Guía de Carga de Datos
-          </Box>
-          <IconButton onClick={handleCloseHelp} sx={{ color: 'white' }}>
-            <CloseIcon />
-          </IconButton>
-        </DialogTitle>
-        <DialogContent sx={{ p: 4 }}>
-          <Stepper orientation="vertical" sx={{ mt: 2 }}>
-            <Step active completed={false}>
-              <StepLabel StepIconProps={{ 
-                sx: { color: theme.palette.primary.main }
-              }}>
-                <Typography variant="subtitle1" fontWeight="bold">
-                  Paso 1: Descarga la plantilla correcta
-                </Typography>
-              </StepLabel>
-              <StepContent>
-                <Typography variant="body2" paragraph>
-                  Descarga la plantilla adecuada según el tipo de información que deseas cargar:
-                </Typography>
-                <ul>
-                  <li><Typography variant="body2">Estudiantes: información básica de los estudiantes</Typography></li>
-                  <li><Typography variant="body2">Programas y Notas: información académica</Typography></li>
-                </ul>
-                <Box sx={{ 
-                  mt: 2, 
-                  p: 2, 
-                  backgroundColor: 'rgba(33, 150, 243, 0.08)', 
-                  borderRadius: 1,
-                  border: '1px solid rgba(33, 150, 243, 0.2)'
-                }}>
-                  <Typography variant="body2">
-                    <strong>Para estudiantes, necesitarás:</strong> tipo_documento, numero_documento, nombres, apellidos, email
-                  </Typography>
-                </Box>
-                <Box sx={{ 
-                  mt: 2, 
-                  p: 2, 
-                  backgroundColor: 'rgba(33, 150, 243, 0.08)', 
-                  borderRadius: 1,
-                  border: '1px solid rgba(33, 150, 243, 0.2)'
-                }}>
-                  <Typography variant="body2">
-                    <strong>Para notas, necesitarás:</strong> tipo_documento, numero_documento, nombre_programa, tipo_programa, estado_programa, materia, nota, periodo
-                  </Typography>
-                </Box>
-              </StepContent>
-            </Step>
-            
-            <Step active completed={false}>
-              <StepLabel StepIconProps={{ 
-                sx: { color: theme.palette.primary.main }
-              }}>
-                <Typography variant="subtitle1" fontWeight="bold">
-                  Paso 2: Completa la información en la plantilla
-                </Typography>
-              </StepLabel>
-              <StepContent>
-                <Typography variant="body2" paragraph>
-                  Llena todos los campos requeridos en la plantilla Excel descargada:
-                </Typography>
-                <ul>
-                  <li><Typography variant="body2">No cambies el nombre de las columnas</Typography></li>
-                  <li><Typography variant="body2">Mantén los formatos de datos correctos</Typography></li>
-                  <li><Typography variant="body2">Asegúrate de que todos los campos requeridos estén completos</Typography></li>
-                </ul>
-                <Typography variant="body2" paragraph sx={{ color: 'error.main', mt: 1 }}>
-                  Los tipos de documento válidos son: CC, TI, CE, PA (Cédula, Tarjeta, Extranjería, Pasaporte)
-                </Typography>
-              </StepContent>
-            </Step>
-            
-            <Step active completed={false}>
-              <StepLabel StepIconProps={{ 
-                sx: { color: theme.palette.primary.main }
-              }}>
-                <Typography variant="subtitle1" fontWeight="bold">
-                  Paso 3: Sube el archivo
-                </Typography>
-              </StepLabel>
-              <StepContent>
-                <Typography variant="body2" paragraph>
-                  Arrastra el archivo Excel a la zona indicada o haz clic para seleccionarlo del explorador de archivos.
-                </Typography>
-                <Typography variant="body2" paragraph>
-                  Una vez subido, verás el nombre del archivo confirmando que está listo para procesar.
-                </Typography>
-              </StepContent>
-            </Step>
-            
-            <Step active completed={false}>
-              <StepLabel StepIconProps={{ 
-                sx: { color: theme.palette.primary.main }
-              }}>
-                <Typography variant="subtitle1" fontWeight="bold">
-                  Paso 4: Procesa la información
-                </Typography>
-              </StepLabel>
-              <StepContent>
-                <Typography variant="body2" paragraph>
-                  Haz clic en el botón "Procesar" para iniciar la carga de datos.
-                </Typography>
-                <Typography variant="body2" paragraph>
-                  Se mostrará una barra de progreso mientras se procesa la información.
-                </Typography>
-                <Typography variant="body2" paragraph>
-                  Al finalizar, verás un mensaje de éxito o error con los detalles del proceso.
-                </Typography>
-              </StepContent>
-            </Step>
-          </Stepper>
-          
-        </DialogContent>
-      </Dialog>
+                Ver Ayuda
+              </Button>
+            </Stack>
+          </CardContent>
+        </Card>
+      </Container>
     </Box>
   );
 };

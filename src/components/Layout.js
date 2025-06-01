@@ -602,6 +602,26 @@ const Layout = ({ children }) => {
                       />
                     </ListItem>
                   </Box>
+                  <Box sx={{ textDecoration: 'none' }} component={Link} to="/carga/diplomas">
+  <ListItem button disableRipple sx={getSubItemStyle(location.pathname === '/carga/diplomas')}>
+    <ListItemIcon>
+      <WorkspacePremiumIcon sx={{ 
+        color: location.pathname === '/carga/diplomas' ? '#fff' : '#CE0A0A',
+        fontSize: '1.2rem'
+      }} />
+    </ListItemIcon>
+    <ListItemText 
+      primary="Diplomas" 
+      primaryTypographyProps={{
+        sx: { 
+          color: location.pathname === '/carga/diplomas' ? '#fff' : '#555',
+          fontSize: '0.9rem',
+          fontWeight: location.pathname === '/carga/diplomas' ? 500 : 400
+        }
+      }}
+    />
+  </ListItem>
+</Box>
                 </List>
               </Collapse>
             </>
