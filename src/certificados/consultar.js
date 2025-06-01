@@ -45,6 +45,7 @@ import VisibilityIcon from '@mui/icons-material/Visibility';
 import PrintIcon from '@mui/icons-material/Print';
 import Navbar from '../components/Navbar';
 import certificateService from '../services/certificateService';
+import certificateServiceEstudio from '../services/certificateServiceEstudio';
 
 const ConsultarCertificados = ({ pageTitle }) => {
   // Estados
@@ -229,39 +230,74 @@ const formatoPesosColombiano = (valor) => {
     return estado === 'completado' || estado === 'completed';
   };
 
-const handleDownloadCertificado = async (certificado) => {
-  if (!certificado) return;
-  try {
-    setLoadingPdf(true);
-    await certificateService.descargarCertificado(certificado);
-    setSnackbar({
-      open: true,
-      message: 'Certificado descargado con éxito',
-      severity: 'success'
-    });
-  } catch (error) {
-    // ... manejo de errores
-  } finally {
-    setLoadingPdf(false);
-  }
-};
 
-const handleViewCertificado = async (certificado) => {
-  if (!certificado) return;
-  try {
-    setLoadingPdf(true);
-    await certificateService.verCertificado(certificado);
-  } catch (error) {
-    console.error('Error al ver certificado:', error);
-    setSnackbar({
-      open: true,
-      message: 'Error al visualizar el certificado. Inténtelo de nuevo más tarde.',
-      severity: 'error'
-    });
-  } finally {
-    setLoadingPdf(false);
-  }
-};
+  // Obtener el servicio adecuado según el tipo de certificado
+  const getServiceByTipo = (tipo) => {
+    if (!tipo) return certificateService; // Default
+    
+    const tipoLower = tipo.toLowerCase();
+    
+    // Todos los posibles tipos de certificado de estudio
+    if (tipoLower.includes('estudio')) {
+      return certificateServiceEstudio;
+    }
+    
+    // Todos los demás van a certificateService (notas)
+    return certificateService;
+  };
+  
+  const handleDownloadCertificado = async (certificado) => {
+    if (!certificado) return;
+    try {
+      setLoadingPdf(true);
+      console.log('📄 Iniciando descarga de certificado:', certificado);
+  
+      const service = getServiceByTipo(certificado.tipo_certificado);
+      console.log('🔍 Tipo de certificado:', certificado.tipo_certificado);
+  
+      // ✅ SIEMPRE el mismo nombre de función
+      await service.descargarCertificado(certificado);
+  
+      setSnackbar({
+        open: true,
+        message: 'Certificado descargado con éxito',
+        severity: 'success'
+      });
+    } catch (error) {
+      console.error('❌ Error al descargar certificado:', error);
+      setSnackbar({
+        open: true,
+        message: `Error al descargar el certificado: ${error.message}`,
+        severity: 'error'
+      });
+    } finally {
+      setLoadingPdf(false);
+    }
+  };
+  
+  const handleViewCertificado = async (certificado) => {
+    if (!certificado) return;
+    try {
+      setLoadingPdf(true);
+      console.log('👁️ Iniciando visualización de certificado:', certificado);
+  
+      const service = getServiceByTipo(certificado.tipo_certificado);
+      console.log('🔍 Tipo de certificado:', certificado.tipo_certificado);
+  
+      // ✅ SIEMPRE el mismo nombre de función
+      await service.verCertificado(certificado);
+  
+    } catch (error) {
+      console.error('❌ Error al ver certificado:', error);
+      setSnackbar({
+        open: true,
+        message: `Error al visualizar el certificado: ${error.message}`,
+        severity: 'error'
+      });
+    } finally {
+      setLoadingPdf(false);
+    }
+  };
 
   const handleCloseSnackbar = () => {
     setSnackbar({
@@ -270,6 +306,8 @@ const handleViewCertificado = async (certificado) => {
     });
   };
 
+
+  // Obtener el color del chip según el estado
   const getEstadoChipColor = (estado) => {
     const estadoTraducido = traducirEstado(estado);
     switch (estadoTraducido) {
