@@ -10,6 +10,7 @@ import Consultar from './certificados/consultar';
 import CargaExcel from './carga';
 import EstudiantesPage from './carga/estudiantes';
 import ProgramasPage from './carga/programas';
+import DiplomasPage from './carga/diplomas';
 // Asegúrate de crear estos componentes en la carpeta "informacion"
 import InfoEstudiantes from './informacion/InfoEstudiantes';
 import InfoProgramas from './informacion/InfoProgramas';
@@ -162,6 +163,7 @@ const App = () => {
                   <Route path="/carga" element={<CargaExcel pageTitle="Carga de Información"/>} />
                   <Route path="/carga/estudiantes" element={<EstudiantesPage />} />
                   <Route path="/carga/programas" element={<ProgramasPage />} />
+                  <Route path="/carga/diplomas" element={<DiplomasPage />} />
                 </Routes>
               </Layout>
             ) : (
