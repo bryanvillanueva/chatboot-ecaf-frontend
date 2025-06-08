@@ -54,8 +54,8 @@ import axios from 'axios';
 import CustomAudioPlayer from './customAudioPlayer';
 import InfoDrawer from './InfoDrawer';
 
-// Componente mejorado para renderizar imágenes con carga progresiva
-const MessageImage = ({ mediaId, onClick }) => {
+// Componente mejorado para renderizar imágenes con caption
+const MessageImage = ({ mediaId, caption, onClick }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [retryCount, setRetryCount] = useState(0);
@@ -137,24 +137,47 @@ const MessageImage = ({ mediaId, onClick }) => {
           </Button>
         </Box>
       ) : (
-        <Zoom in={imageLoaded} timeout={300}>
-          <img 
-            src={imageSrc}
-            alt="Message attachment" 
-            style={{ 
-              maxWidth: '100%',
-              maxHeight: '200px',
-              borderRadius: '12px',
-              cursor: 'pointer',
-              display: loading ? 'none' : 'block',
-              objectFit: 'contain',
-              transition: 'transform 0.2s ease-in-out',
-            }}
-            onLoad={handleImageLoaded}
-            onError={handleImageError}
-            onClick={onClick || (() => window.open(imageSrc, '_blank'))}
-          />
-        </Zoom>
+        <>
+          <Zoom in={imageLoaded} timeout={300}>
+            <img 
+              src={imageSrc}
+              alt="Message attachment" 
+              style={{ 
+                maxWidth: '100%',
+                maxHeight: '200px',
+                borderRadius: caption ? '12px 12px 0 0' : '12px', // Ajustar bordes si hay caption
+                cursor: 'pointer',
+                display: loading ? 'none' : 'block',
+                objectFit: 'contain',
+                transition: 'transform 0.2s ease-in-out',
+              }}
+              onLoad={handleImageLoaded}
+              onError={handleImageError}
+              onClick={onClick || (() => window.open(imageSrc, '_blank'))}
+            />
+          </Zoom>
+          
+          {/* Mostrar caption si existe */}
+          {caption && caption.trim() && (
+            <Box sx={{ 
+              p: 1.5, 
+              backgroundColor: 'inherit', // Hereda el color de la burbuja del mensaje
+              borderRadius: '0 0 12px 12px',
+              borderTop: '1px solid rgba(255,255,255,0.1)'
+            }}>
+              <Typography 
+                variant="body2" 
+                sx={{ 
+                  wordBreak: 'break-word',
+                  lineHeight: 1.4,
+                  fontSize: '0.875rem'
+                }}
+              >
+                {caption}
+              </Typography>
+            </Box>
+          )}
+        </>
       )}
     </Box>
   );
@@ -813,33 +836,34 @@ const Messages = ({ conversationId }) => {
     }
   };
 
-  // Renderizado del contenido del mensaje según su tipo
-  const renderMessageContent = (msg) => {
-    switch (msg.message_type) {
-      case 'audio':
-        return (
-          <CustomAudioPlayer 
-            src={`https://webhook-ecaf-production.up.railway.app/api/download-media?url=${encodeURIComponent(msg.media_url)}&mediaId=${encodeURIComponent(msg.media_id)}`} 
-          />
-        );
-      case 'image':
-        return (
-          <MessageImage 
-            mediaId={msg.media_id} 
-            onClick={() => handleOpenImageModal(`https://webhook-ecaf-production.up.railway.app/api/download-image/${msg.media_id}`)}
-          />
-        );
-      case 'document':
-        return (
-          <MessageDocument 
-            mediaId={msg.media_id} 
-            fileName={"Documento Adjunto"}
-          />
-        );
-      default:
-        return <Typography variant="body1">{msg.message}</Typography>;
-    }
-  };
+  // Renderizado del contenido del mensaje según su tipo (MODIFICADO)
+const renderMessageContent = (msg) => {
+  switch (msg.message_type) {
+    case 'audio':
+      return (
+        <CustomAudioPlayer 
+          src={`https://webhook-ecaf-production.up.railway.app/api/download-media?url=${encodeURIComponent(msg.media_url)}&mediaId=${encodeURIComponent(msg.media_id)}`} 
+        />
+      );
+    case 'image':
+      return (
+        <MessageImage 
+          mediaId={msg.media_id} 
+          caption={msg.message} // Pasamos el campo message como caption
+          onClick={() => handleOpenImageModal(`https://webhook-ecaf-production.up.railway.app/api/download-image/${msg.media_id}`)}
+        />
+      );
+    case 'document':
+      return (
+        <MessageDocument 
+          mediaId={msg.media_id} 
+          fileName={msg.message || "Documento Adjunto"} // También podríamos usar el message como nombre del archivo si lo prefieres
+        />
+      );
+    default:
+      return <Typography variant="body1">{msg.message}</Typography>;
+  }
+};
 
   // Renderizar indicador de estado de mensaje
   const renderMessageStatus = (msg) => {
