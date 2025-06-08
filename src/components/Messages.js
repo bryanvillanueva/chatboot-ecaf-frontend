@@ -967,7 +967,7 @@ const renderMessageContent = (msg) => {
             borderRadius: '4px',
           },
           '&::-webkit-scrollbar-track': {
-            backgroundColor: 'rgba(0, 0, 0, 0.05)',
+            backgroundColor: 'rgba(0, 0, 0, 0.0)',
             borderRadius: '4px',
           },
         }}
