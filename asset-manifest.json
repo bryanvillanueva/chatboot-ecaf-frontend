@@ -1,13 +1,13 @@
 {
   "files": {
-    "main.css": "/chatboot-ecaf-frontend/static/css/main.25446c54.css",
-    "main.js": "/chatboot-ecaf-frontend/static/js/main.e1472fa4.js",
+    "main.css": "/chatboot-ecaf-frontend/static/css/main.2a9a26f2.css",
+    "main.js": "/chatboot-ecaf-frontend/static/js/main.fa5c31d5.js",
     "index.html": "/chatboot-ecaf-frontend/index.html",
-    "main.25446c54.css.map": "/chatboot-ecaf-frontend/static/css/main.25446c54.css.map",
-    "main.e1472fa4.js.map": "/chatboot-ecaf-frontend/static/js/main.e1472fa4.js.map"
+    "main.2a9a26f2.css.map": "/chatboot-ecaf-frontend/static/css/main.2a9a26f2.css.map",
+    "main.fa5c31d5.js.map": "/chatboot-ecaf-frontend/static/js/main.fa5c31d5.js.map"
   },
   "entrypoints": [
-    "static/css/main.25446c54.css",
-    "static/js/main.e1472fa4.js"
+    "static/css/main.2a9a26f2.css",
+    "static/js/main.fa5c31d5.js"
   ]
 }
