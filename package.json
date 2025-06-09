@@ -54,6 +54,7 @@
     ]
   },
   "devDependencies": {
-    "gh-pages": "^6.3.0"
+    "gh-pages": "^6.3.0",
+    "pdfmake-font-generator": "^1.0.1"
   }
 }
