@@ -46,6 +46,7 @@ import PrintIcon from '@mui/icons-material/Print';
 import Navbar from '../components/Navbar';
 import certificateService from '../services/certificateService';
 import certificateServiceEstudio from '../services/certificateServiceEstudio';
+import diplomaService from '../services/diplomaService';
 
 const ConsultarCertificados = ({ pageTitle }) => {
   // Estados
@@ -236,6 +237,11 @@ const formatoPesosColombiano = (valor) => {
     if (!tipo) return certificateService; // Default
     
     const tipoLower = tipo.toLowerCase();
+    
+    // Detectar diplomas
+    if (tipoLower.includes('diploma')) {
+      return diplomaService;
+    }
     
     // Todos los posibles tipos de certificado de estudio
     if (tipoLower.includes('estudio')) {
