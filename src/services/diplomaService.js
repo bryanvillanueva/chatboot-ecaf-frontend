@@ -1,16 +1,24 @@
 import pdfMake from 'pdfmake/build/pdfmake';
 import pdfFonts from 'pdfmake/build/vfs_fonts';
 
-// Inicializar pdfMake con las fuentes virtuales
+// Inicializar pdfMake con las fuentes virtuales y configurar fuentes estándar
 pdfMake.vfs = pdfFonts.pdfMake ? pdfFonts.pdfMake.vfs : pdfFonts;
 
-// Registrar fuentes personalizadas
+// Usar solo las fuentes que vienen por defecto con pdfMake
 pdfMake.fonts = {
+  // Roboto está disponible por defecto
   Roboto: {
     normal: 'Roboto-Regular.ttf',
     bold: 'Roboto-Medium.ttf',
     italics: 'Roboto-Italic.ttf',
     bolditalics: 'Roboto-MediumItalic.ttf'
+  },
+  // Helvetica está disponible como fuente estándar
+  Helvetica: {
+    normal: 'Helvetica',
+    bold: 'Helvetica-Bold',
+    italics: 'Helvetica-Oblique',
+    bolditalics: 'Helvetica-BoldOblique'
   }
 };
 
@@ -28,7 +36,7 @@ const ECAF_INFO = {
   pais: "Colombia"
 };
 
-// Función para convertir imagen a base64 (necesaria para pdfMake)
+// Función para convertir imagen a base64 (IGUAL QUE LOS OTROS SERVICIOS)
 const convertImageToBase64 = (imagePath) => {
   return new Promise((resolve, reject) => {
     const img = new Image();
@@ -70,7 +78,7 @@ const convertImageToBase64 = (imagePath) => {
   });
 };
 
-// Función auxiliar para probar rutas alternativas
+// Función auxiliar para probar rutas alternativas (IGUAL QUE LOS OTROS SERVICIOS)
 const tryAlternativePaths = (paths, index, resolve, reject) => {
   if (index >= paths.length) {
     reject(new Error('No se pudo cargar la imagen desde ninguna ruta'));
@@ -119,66 +127,36 @@ const formatearFechaGrado = (fecha) => {
   return fechaObj.toLocaleDateString('es-ES', options);
 };
 
-// Función para crear los bordes decorativos del diploma
-const createDecorativeBorders = () => {
-  return {
-    // Borde decorativo superior izquierdo (triángulo dorado)
-    canvas: [
-      // Triángulo dorado superior izquierdo
-      {
-        type: 'polygon',
-        points: [
-          { x: 0, y: 0 },
-          { x: 150, y: 0 },
-          { x: 0, y: 150 }
-        ],
-        color: '#FFD700'
-      },
-      // Triángulo rojo superior derecho
-      {
-        type: 'polygon',
-        points: [
-          { x: 450, y: 0 },
-          { x: 595, y: 0 },
-          { x: 595, y: 145 }
-        ],
-        color: '#CE0A0A'
-      },
-      // Triángulo dorado inferior derecho
-      {
-        type: 'polygon',
-        points: [
-          { x: 595, y: 250 },
-          { x: 595, y: 400 },
-          { x: 445, y: 400 }
-        ],
-        color: '#FFD700'
-      },
-      // Triángulo rojo inferior izquierdo
-      {
-        type: 'polygon',
-        points: [
-          { x: 0, y: 400 },
-          { x: 150, y: 400 },
-          { x: 0, y: 250 }
-        ],
-        color: '#CE0A0A'
-      }
-    ]
-  };
-};
-
-// Plantilla para diploma basada en la imagen exacta
+// Plantilla para diploma - FORMATO HORIZONTAL FORZADO
 const createDiplomaTemplate = async (data) => {
+  let fondoCompletoBase64 = null;
+  let fondoSinLogosBase64 = null;
   let logoECAFBase64 = null;
   let escudoColombiaBase64 = null;
   let firmaDirectorBase64 = null;
   let firmaCoordinadoraBase64 = null;
   
   try {
-    console.log('🖼️ Iniciando carga de imágenes...');
+    console.log('🖼️ Iniciando carga de imágenes de fondo...');
     
-    // Cargar logo de ECAF (circular, lado derecho)
+    // PRIMERO: Intentar cargar fondos
+    try {
+      fondoCompletoBase64 = await convertImageToBase64('/img/fondo-diploma-completo.png');
+      console.log('✅ Fondo completo cargado correctamente');
+    } catch (error) {
+      console.warn('⚠️ No se pudo cargar el fondo completo:', error.message);
+    }
+    
+    try {
+      fondoSinLogosBase64 = await convertImageToBase64('/img/fondo-diploma-simple.png');
+      console.log('✅ Fondo simple cargado correctamente');
+    } catch (error) {
+      console.warn('⚠️ No se pudo cargar el fondo simple:', error.message);
+    }
+    
+    // SEGUNDO: SIEMPRE cargar elementos individuales (logos y firmas)
+    console.log('🔄 Cargando elementos individuales (logos y firmas)...');
+    
     try {
       logoECAFBase64 = await convertImageToBase64('/img/logo.png');
       console.log('✅ Logo ECAF cargado correctamente');
@@ -186,7 +164,6 @@ const createDiplomaTemplate = async (data) => {
       console.warn('⚠️ No se pudo cargar el logo ECAF:', error.message);
     }
     
-    // Cargar escudo de Colombia (lado izquierdo)
     try {
       escudoColombiaBase64 = await convertImageToBase64('/img/escudo-colombia.png');
       console.log('✅ Escudo de Colombia cargado correctamente');
@@ -194,7 +171,7 @@ const createDiplomaTemplate = async (data) => {
       console.warn('⚠️ No se pudo cargar el escudo de Colombia:', error.message);
     }
     
-    // Cargar firmas
+    // FIRMAS INDIVIDUALES ESPECÍFICAS DEL DIPLOMA - ÚNICAMENTE ESTAS
     try {
       firmaDirectorBase64 = await convertImageToBase64('/img/firma-director.png');
       console.log('✅ Firma del director cargada correctamente');
@@ -213,317 +190,348 @@ const createDiplomaTemplate = async (data) => {
     console.warn('⚠️ Error general al cargar imágenes:', error);
   }
 
+  // Decidir qué fondo usar
+  const fondoSeleccionado = fondoCompletoBase64 || fondoSinLogosBase64;
+  const tieneElementosIndividuales = logoECAFBase64 || escudoColombiaBase64;
+
+  console.log('🎯 Configuración final:');
+  console.log('   - Fondo completo:', fondoCompletoBase64 ? 'SÍ' : 'NO');
+  console.log('   - Fondo simple:', fondoSinLogosBase64 ? 'SÍ' : 'NO');
+  console.log('   - Logo ECAF:', logoECAFBase64 ? 'SÍ' : 'NO');
+  console.log('   - Escudo Colombia:', escudoColombiaBase64 ? 'SÍ' : 'NO');
+  console.log('   - Firma Director:', firmaDirectorBase64 ? 'SÍ' : 'NO');
+  console.log('   - Firma Coordinadora:', firmaCoordinadoraBase64 ? 'SÍ' : 'NO');
+  console.log('📐 Configuración PDF:');
+  console.log('   - Tamaño: 922x639 (326×226 mm - tamaño original)');
+  console.log('   - Orientación: landscape');
+  console.log('   - Fuente: Roboto');
+  console.log('   - Fondo seleccionado:', fondoSeleccionado ? 'SÍ' : 'NO');
+
   return {
-    pageSize: 'A4',
-    landscape: true, // Diploma en formato horizontal
-    pageMargins: [40, 40, 40, 40],
+    pageSize: { width: 922, height: 639 }, // TAMAÑO ORIGINAL: 326×226 mm convertido a puntos
+    pageOrientation: 'landscape', // ORIENTACIÓN EXPLÍCITA
+    landscape: true, // REDUNDANTE PERO NECESARIO
+    pageMargins: [30, 30, 30, 30], // MÁRGENES MÁS PEQUEÑOS PARA EL NUEVO TAMAÑO
     
-    // Fondo con bordes decorativos
-    background: [
-      // Marca de agua central con el logo ECAF
-      logoECAFBase64 ? {
-        image: logoECAFBase64,
-        width: 400,
-        opacity: 0.08,
-        alignment: 'center',
-        margin: [0, 150, 0, 0]
-      } : null,
-      
-      // Bordes decorativos con triángulos
-      createDecorativeBorders()
-    ].filter(Boolean),
+    // BACKGROUND: Usar imagen de fondo si existe
+    background: fondoSeleccionado ? {
+      image: fondoSeleccionado,
+      width: 922, // TODA LA PÁGINA - nuevo tamaño
+      height: 639, // TODA LA PÁGINA - nuevo tamaño  
+      absolutePosition: { x: 0, y: 0 }, // DESDE ESQUINA SUPERIOR IZQUIERDA
+      cover: { width: 922, height: 639 } // FORZAR COBERTURA TOTAL
+    } : logoECAFBase64 ? {
+      // Marca de agua si solo tenemos logo individual
+      image: logoECAFBase64,
+      width: 400,
+      opacity: 0.08,
+      alignment: 'center',
+      margin: [0, 150, 0, 0]
+    } : null,
     
     content: [
-      // HEADER PRINCIPAL
+      // HEADER PRINCIPAL - SIEMPRE MOSTRAR (incluso con fondo)
       {
         columns: [
-          // Escudo de Colombia (izquierda)
+          // Espacio para escudo (si no hay fondo, se muestra; si hay fondo, solo espacio)
           {
             width: 80,
-            stack: escudoColombiaBase64 ? [
-              {
-                image: escudoColombiaBase64,
-                width: 70,
-                height: 80,
-                alignment: 'center',
-                margin: [0, 0, 0, 0]
-              }
-            ] : [{ text: '', height: 80 }]
+            text: '', // Solo espacio para alineación
+            height: 50
           },
           
-          // Título central
+          // Título central - SIEMPRE VISIBLE
           {
             width: '*',
             stack: [
               {
-                text: 'ESCUELA DE CAPACITACIÓN PARA EL ACONDICIONAMIENTO FÍSICO',
-                style: 'mainTitle',
+                text: [
+                  { text: 'ESCUELA DE CAPACITACIÓN PARA EL ACONDICIONAMIENTO FÍSICO', style: 'mainTitleBold' },
+                  { text: '\n"ECAF"', style: 'ecafTitleBold' }
+                ],
                 alignment: 'center',
-                margin: [0, 8, 0, 2]
-              },
-              {
-                text: '"ECAF"',
-                style: 'ecafTitle',
-                alignment: 'center',
-                margin: [0, 0, 0, 5]
+                margin: [0, 8, 0, 3]
               },
               {
                 text: 'Institución de Educación Para el Trabajo y el Desarrollo Humano',
-                style: 'subtitle',
+                style: 'subtitleBold',
                 alignment: 'center',
                 margin: [0, 0, 0, 2]
               },
               {
-                text: 'Aprobado por la Secretaría de Educación Distrital de Barranquilla Mediante Resolución No 001356 de 2006 y con Personería Jurídica No.00194 de 2007',
-                style: 'resolution',
+                text: [
+              
+                  { text: 'Aprobado por la Secretaría de Educación Distrital de Barranquilla Mediante Resolución No 001356 de 2006'},
+                  {text: '\ny con Personería Jurídica No.00194 de 2007 emanada por la Gobernación del Atlántico.'	}
+                ],
+                style: 'resolutionBold',
                 alignment: 'center',
-                margin: [0, 0, 0, 2]
-              },
-              {
-                text: 'emanada por la Gobernación del Atlántico.',
-                style: 'resolution',
-                alignment: 'center'
+                margin: [0, 0, 0, 0]
               }
             ]
           },
           
-          // Logo ECAF (derecha)
+          // Espacio para logo (si no hay fondo, se muestra; si hay fondo, solo espacio)
           {
             width: 80,
-            stack: logoECAFBase64 ? [
-              {
-                image: logoECAFBase64,
-                width: 70,
-                height: 70,
-                alignment: 'center',
-                margin: [0, 5, 0, 0]
-              }
-            ] : [{ text: '', height: 80 }]
+            text: '', // Solo espacio para alineación
+            height: 50
           }
         ],
-        margin: [0, 0, 0, 25]
+        margin: [0, 15, 0, 8] // REDUCIR MARGEN INFERIOR (era 20)
       },
       
       // "Certifica que" - centrado y en cursiva
       {
-        text: 'Certifica que',
-        style: 'certificaQue',
+        text: 'Certifica qué',
+        style: 'certificaQueBold',
         alignment: 'center',
-        margin: [0, 15, 0, 20]
+        margin: [0, 5, 0, 8] // REDUCIR MÁRGENES (era 10, 15)
       },
       
-      // NOMBRE DEL ESTUDIANTE - grande y destacado
+      // NOMBRE DEL ESTUDIANTE - grande, cursiva y destacado
       {
         text: `${data.diploma.nombre} ${data.diploma.apellido}`.toUpperCase(),
-        style: 'studentName',
+        style: 'studentNameItalic',
         alignment: 'center',
-        margin: [0, 0, 0, 15]
+        margin: [0, 0, 0, -7] // REDUCIR MARGEN INFERIOR (era 8)
       },
       
-      // LÍNEA DECORATIVA bajo el nombre
+      // LÍNEA AMARILLA bajo el nombre
       {
         canvas: [
           {
             type: 'line',
-            x1: 150, y1: 0,
-            x2: 645, y2: 0,
-            lineWidth: 2,
-            lineColor: '#CE0A0A'
+            x1: 140, y1: 0,
+            x2: 700, y2: 0, // AJUSTAR AL NUEVO ANCHO
+            lineWidth: 1,
+            lineColor: '#E0B933' // COLOR AMARILLO ESPECIFICADO
           }
         ],
-        margin: [0, 0, 0, 15]
+        margin: [0, 0, 0, 8] // REDUCIR MARGEN INFERIOR (era 12)
       },
       
       // NÚMERO DE IDENTIFICACIÓN
       {
         text: `Con ${data.diploma.tipo_identificacion} ${data.diploma.numero_identificacion}`,
-        style: 'identification',
+        style: 'identificationBold',
         alignment: 'center',
-        margin: [0, 0, 0, 25]
+        margin: [0, 0, 0, 15]
       },
       
       // TEXTO PRINCIPAL DEL CERTIFICADO
       {
         text: 'Asistió y aprobó el diplomado de:',
-        style: 'mainText',
+        style: 'mainTextBold',
         alignment: 'center',
-        margin: [0, 0, 0, 20]
+        margin: [0, 0, 0, 1]
       },
       
       // NOMBRE DEL PROGRAMA/DIPLOMADO
       {
         text: (data.diploma.nombre_tipo_diploma || data.diploma.tipo_diploma || 'PERSONAL TRAINER').toUpperCase(),
-        style: 'programTitle',
+        style: 'programTitleBold',
         alignment: 'center',
-        margin: [0, 0, 0, 10]
+        margin: [0, 0, 0, 1]
       },
       
       // MODALIDAD
       {
         text: `(${(data.diploma.modalidad || 'PRESENCIAL').toUpperCase()})`,
-        style: 'modality',
+        style: 'modalityBold',
         alignment: 'center',
-        margin: [0, 0, 0, 20]
+        margin: [0, 0, 0, 12]
       },
       
       // TEXTO DE CUMPLIMIENTO
       {
-        text: 'Cumpliendo satisfactoriamente los requisitos académicos y reglamentarios correspondiente al plan de estudio establecido por esta institución',
-        style: 'complianceText',
+        text: [
+        {text: 'Cumpliendo satisfactoriamente los requisitos académicos y reglamentarios correspondiente al plan de estudio '},
+        {text: '\n establecido por esta institución'}
+      ],
+        style: 'complianceTextBold',
         alignment: 'center',
-        margin: [0, 0, 0, 25]
+        margin: [0, 0, 0, 15]
       },
       
       // FECHA Y LUGAR DE EXPEDICIÓN
       {
         text: `Para su constancia se firma en la ciudad de ${ECAF_INFO.ciudad} el día ${formatearFechaGrado(data.diploma.fecha_grado)}`,
-        style: 'expeditionText',
+        style: 'expeditionTextBold',
         alignment: 'center',
-        margin: [0, 0, 0, 30]
+        margin: [0, 0, 0, 10] // REDUCIR MARGEN (era 20)
       },
       
-      // SECCIÓN DE FIRMAS
+      // SECCIÓN DE FIRMAS - IMÁGENES SOBRE TEXTO
       {
         columns: [
           // Firma del Director
           {
             width: '*',
             stack: [
+              // Imagen de firma (si existe)
               firmaDirectorBase64 ? {
                 image: firmaDirectorBase64,
                 width: 120,
                 height: 40,
                 alignment: 'center',
-                margin: [0, 0, 0, 5]
-              } : {
+                margin: [0, 0, 0, -18] // Sin margen para que esté pegada al texto
+              } : null,
+              // Línea de texto SIEMPRE visible
+              {
                 text: '________________________',
                 alignment: 'center',
-                margin: [0, 20, 0, 5]
+                margin: [0, 0, 0, 0] // Margen pequeño
               },
               {
                 text: 'Director',
-                style: 'signatureTitle',
+                style: 'signatureTitleBold',
                 alignment: 'center'
               }
-            ]
+            ].filter(Boolean) // Filtrar elementos null
           },
           
           // Firma de la Coordinadora Académica
           {
             width: '*',
             stack: [
+              // Imagen de firma (si existe)
               firmaCoordinadoraBase64 ? {
                 image: firmaCoordinadoraBase64,
                 width: 120,
                 height: 40,
                 alignment: 'center',
-                margin: [0, 0, 0, 5]
-              } : {
+                margin: [0, 0, 0, -24] // Sin margen para que esté pegada al texto
+              } : null,
+              // Línea de texto SIEMPRE visible
+              {
                 text: '________________________',
                 alignment: 'center',
-                margin: [0, 20, 0, 5]
+                margin: [0, 5, 0, 5] // Margen pequeño
               },
               {
                 text: 'Coordinadora Académica',
-                style: 'signatureTitle',
+                style: 'signatureTitleBold',
                 alignment: 'center'
               }
-            ]
+            ].filter(Boolean) // Filtrar elementos null
           }
         ],
-        margin: [60, 0, 60, 20]
+        margin: [80, 0, 80, 5] // REDUCIR MARGEN INFERIOR (era 20)
       },
       
       // INFORMACIÓN FINAL (Barranquilla, Libro, Acta)
       {
         columns: [
-          {
-            width: '*',
-            text: `${ECAF_INFO.ciudad}, ${formatearFechaGrado(data.diploma.fecha_grado)}`,
-            style: 'footerInfo',
-            alignment: 'left'
-          },
+          { width: '*', text: '' },          // espaciador izquierdo (opcional)
           {
             width: 'auto',
-            text: `Libro No. ${data.diploma.libro || '___'}`,
-            style: 'footerInfo',
-            alignment: 'center',
-            margin: [20, 0, 20, 0]
+            columns: [
+              // Ciudad + fecha
+              {
+                text: `${ECAF_INFO.ciudad}, ${formatearFechaGrado(data.diploma.fecha_grado)}`,
+                style: 'footerInfoBold',
+                alignment: 'center',
+                margin: [0, 0, 180, 0]
+              },
+      
+              // ► «Libro …  Acta …» JUNTOS
+              {
+                width: 'auto',
+                text: [
+                  { text: `Libro No. ${data.diploma.libro || '___'}`, style: 'footerInfoBold' },
+                  { text: '   ' },   // separación con espacios finos
+                  { text: `Acta No. ${data.diploma.acta || '___'}`,  style: 'footerInfoBold' }
+                ],
+                alignment: 'center',
+                margin: [0, 0, 50, 0]
+              }
+            ],
+            columnGap: 8          // separa ciudad-fecha del bloque Libro-Acta
           },
-          {
-            width: 'auto',
-            text: `Acta No. ${data.diploma.acta || '___'}`,
-            style: 'footerInfo',
-            alignment: 'right'
-          }
-        ],
-        margin: [0, 15, 0, 0]
+          { width: '*', text: '' }           // espaciador derecho (opcional)
+        ]
       }
+      
     ],
     
     styles: {
-      mainTitle: {
+      // TODOS LOS ESTILOS CON TIMES NEW ROMAN Y NEGRITA
+      mainTitleBold: {
         fontSize: 16,
+        bold: true,
+        color: '#333333',
+        italics: true,  
+      },
+      ecafTitleBold: {
+        fontSize: 32,
         bold: true,
         color: '#333333'
       },
-      ecafTitle: {
-        fontSize: 32,
-        bold: true,
-        color: '#CE0A0A'
-      },
-      subtitle: {
+      subtitleBold: {
         fontSize: 12,
+        bold: true, // CAMBIAR A BOLD
+        color: '#333333',
         italics: true,
-        color: '#333333'
       },
-      resolution: {
-        fontSize: 8,
-        color: '#666666'
-      },
-      certificaQue: {
-        fontSize: 18,
+      resolutionBold: {
+        fontSize: 9,
+        bold: true, // CAMBIAR A BOLD
+        color: '#333333',
         italics: true,
-        color: '#333333'
       },
-      studentName: {
+      certificaQueBold: {
+        fontSize: 12,
+        bold: true, // CAMBIAR A BOLD
+        color: '#333333',
+        italics: true,
+      },
+      studentNameItalic: {
         fontSize: 32,
-        bold: true,
-        color: '#CE0A0A'
+        italics: true, // CURSIVA PARA EL NOMBRE
+    
+        color: '#333333',
       },
-      identification: {
-        fontSize: 14,
+      identificationBold: {
+        fontSize: 10,
+        bold: true, // CAMBIAR A BOLD
         color: '#333333'
       },
-      mainText: {
-        fontSize: 16,
+      mainTextBold: {
+        fontSize: 10,
+        bold: true, // CAMBIAR A BOLD
         color: '#333333'
       },
-      programTitle: {
+      programTitleBold: {
         fontSize: 24,
         bold: true,
         color: '#333333'
       },
-      modality: {
+      modalityBold: {
         fontSize: 14,
         bold: true,
         color: '#333333'
       },
-      complianceText: {
-        fontSize: 12,
+      complianceTextBold: {
+        fontSize: 11,
+        bold: true, // CAMBIAR A BOLD
         color: '#333333',
-        lineHeight: 1.4
+        lineHeight: 1.3,
+        italics: true,
+        
       },
-      expeditionText: {
-        fontSize: 12,
-        color: '#333333'
+      expeditionTextBold: {
+        fontSize: 11,
+        bold: true, // CAMBIAR A BOLD
+        color: '#333333',
+        italics: true,
       },
-      signatureTitle: {
+      signatureTitleBold: {
         fontSize: 11,
         bold: true,
         color: '#333333'
       },
-      footerInfo: {
+      footerInfoBold: {
         fontSize: 10,
         bold: true,
         color: '#333333'
@@ -531,13 +539,13 @@ const createDiplomaTemplate = async (data) => {
     },
     
     defaultStyle: {
-      font: 'Roboto',
+      font: 'Roboto', // USAR ROBOTO COMO FUENTE PRINCIPAL (funciona mejor)
       lineHeight: 1.2
     }
   };
 };
 
-// Función para cargar datos reales de la base de datos
+// Función para cargar datos reales de la base de datos (IGUAL QUE LOS OTROS SERVICIOS)
 const cargarDatosRealesDiploma = async (diploma) => {
   try {
     console.log('🔄 Cargando datos del diploma:', diploma);
@@ -553,7 +561,6 @@ const cargarDatosRealesDiploma = async (diploma) => {
     const data = await response.json();
     console.log('✅ Datos del diploma obtenidos:', data);
 
-    // Devolvemos las propiedades exactamente como vienen en el JSON:
     return {
       diploma: {
         id: data.diploma?.id || diploma.id,
@@ -581,7 +588,7 @@ const cargarDatosRealesDiploma = async (diploma) => {
   }
 };
 
-// Función principal para generar PDF de diploma
+// Función principal para generar PDF de diploma (IGUAL QUE LOS OTROS SERVICIOS)
 const generarDiplomaReal = async (diploma) => {
   try {
     console.log('🔄 Generando diploma para:', diploma);
@@ -605,7 +612,7 @@ const generarDiplomaReal = async (diploma) => {
   }
 };
 
-// Función para descargar el diploma
+// Función para descargar el diploma (IGUAL QUE LOS OTROS SERVICIOS)
 const descargarDiploma = async (diploma) => {
   try {
     console.log('📥 Iniciando descarga de diploma');
@@ -620,7 +627,7 @@ const descargarDiploma = async (diploma) => {
   }
 };
 
-// Función para ver el diploma en nueva pestaña
+// Función para ver el diploma en nueva pestaña (IGUAL QUE LOS OTROS SERVICIOS)
 const verDiploma = async (diploma) => {
   try {
     console.log('👁️ Iniciando visualización de diploma');
