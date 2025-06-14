@@ -100,8 +100,10 @@ const Navbar = ({ pageTitle }) => {
   socket.on('certificateStatusChanged', (notification) => {
     console.log('🔔 Notificación recibida:', notification);
     
-    // Incrementar el contador de notificaciones
-    setNotificationCount(prev => prev + 1);
+    // Solo incrementar si la notificación viene marcada como no leída
+    if (!notification.read_status) {
+      setNotificationCount(prev => prev + 1);
+    }
     
     // Agregar la nueva notificación a la lista si está abierta
     setNotifications(prev => [notification, ...prev]);
@@ -188,7 +190,13 @@ const Navbar = ({ pageTitle }) => {
       setIsLoadingNotifications(true);
       const response = await axios.get(`${API_URL}/api/certificados/notificaciones?limit=10`);
       setNotifications(response.data);
+      
+      // Sincronizar contador con las notificaciones cargadas
+      const unreadCount = response.data.filter(notif => !notif.read_status).length;
+      setNotificationCount(unreadCount);
+      
       console.log('📋 Notificaciones cargadas:', response.data.length);
+      console.log('📊 Notificaciones no leídas locales:', unreadCount);
       setIsLoadingNotifications(false);
     } catch (error) {
       console.error('❌ Error al obtener notificaciones:', error);
@@ -198,10 +206,17 @@ const Navbar = ({ pageTitle }) => {
   
   // Función para marcar notificaciones como leídas
   const markAsRead = async (ids) => {
-    if (!ids || ids.length === 0) return;
+    if (!ids || ids.length === 0) return Promise.resolve();
+    
+    console.log('📝 Intentando marcar como leídas:', ids);
+    console.log('🌐 URL:', `${API_URL}/api/certificados/notificaciones/marcar-leidas`);
+    console.log('📤 Datos enviados:', { ids });
     
     try {
-      await axios.put(`${API_URL}/api/certificados/notificaciones/marcar-leidas`, { ids });
+      const response = await axios.put(`${API_URL}/api/certificados/notificaciones/marcar-leidas`, { ids });
+      
+      console.log('✅ Respuesta exitosa:', response.data);
+      console.log('📊 Status:', response.status);
       
       // Actualizar la UI
       setNotifications(prev => 
@@ -210,21 +225,38 @@ const Navbar = ({ pageTitle }) => {
         )
       );
       
-      // Actualizar el contador
-      fetchNotificationCount();
+      // Decrementar el contador localmente
+      setNotificationCount(prev => Math.max(0, prev - ids.length));
+      console.log('📊 Contador actualizado localmente');
+      
+      return Promise.resolve(response.data);
     } catch (error) {
-      console.error('Error al marcar notificaciones como leídas:', error);
+      console.error('❌ Error al marcar como leídas:', error);
+      console.error('❌ Status:', error.response?.status);
+      console.error('❌ Data:', error.response?.data);
+      console.error('❌ URL solicitada:', error.config?.url);
+      console.error('❌ Método:', error.config?.method);
+      console.error('❌ Datos enviados:', error.config?.data);
+      
+      // En caso de error, refrescar el contador desde el servidor
+      await fetchNotificationCount();
+      return Promise.reject(error);
     }
   };
   
   // Función para marcar todas como leídas
   const markAllAsRead = async () => {
-    const unreadIds = notifications
-      .filter(notif => !notif.read_status)
-      .map(notif => notif.id);
+    const unreadNotifications = notifications.filter(notif => !notif.read_status);
+    const unreadIds = unreadNotifications.map(notif => notif.id);
       
+    console.log('📝 markAllAsRead llamado, IDs no leídas:', unreadIds);
+    
     if (unreadIds.length > 0) {
-      await markAsRead(unreadIds);
+      return await markAsRead(unreadIds); // Retornar la Promise de markAsRead
+      // markAsRead ya actualiza el contador, no necesitamos hacer nada más
+    } else {
+      console.log('ℹ️ No hay notificaciones no leídas');
+      return Promise.resolve(); // Retornar Promise resuelta si no hay nada que hacer
     }
   };
   
@@ -255,11 +287,18 @@ const Navbar = ({ pageTitle }) => {
     setNotificationAnchorEl(null);
   };
   
-  // Manejar clic en una notificación - Actualizado
-  const handleNotificationItemClick = (notification) => {
+  // Manejar clic en una notificación
+  const handleNotificationItemClick = async (notification) => {
+    console.log('📋 Click en notificación:', notification);
+    
     // Si no está leída, márcarla como leída
     if (!notification.read_status) {
-      markAsRead([notification.id]);
+      try {
+        await markAsRead([notification.id]);
+        console.log('✅ Notificación marcada como leída');
+      } catch (error) {
+        console.error('❌ Error al marcar notificación como leída:', error);
+      }
     }
     
     // Verificar si estamos en la página de certificados
@@ -268,13 +307,14 @@ const Navbar = ({ pageTitle }) => {
     // Cerrar el menú de notificaciones
     handleNotificationClose();
     
-    if (onCertificatesPage) {
-      // Si ya estamos en la página de certificados, recargamos
-      window.location.reload();
-    } else {
-      // Si no, navegamos a la página de certificados
-      navigate('/certificados/consultar');
-    }
+    // Esperar un poco para que se complete la actualización
+    setTimeout(() => {
+      if (onCertificatesPage) {
+        window.location.reload();
+      } else {
+        navigate('/certificados/consultar');
+      }
+    }, 100);
   };
   
   // Formatear fecha para las notificaciones
@@ -335,6 +375,64 @@ const Navbar = ({ pageTitle }) => {
     }, 800); // Mostramos el loader por al menos 800ms
   };
 
+  // TEST: Verificar si markAsRead funciona
+  const testMarkAsRead = async () => {
+    try {
+      console.log('🧪 Probando markAsRead...');
+      
+      // Tomar el ID de una notificación no leída (ejemplo: 26)
+      const testId = 26;
+      
+      console.log(`📋 Marcando notificación ${testId} como leída...`);
+      
+      const response = await axios.put(`${API_URL}/api/certificados/notificaciones/marcar-leidas`, { 
+        ids: [testId] 
+      });
+      
+      console.log('✅ Respuesta del servidor:', response.data);
+      
+      // Verificar si se actualizó en la base de datos
+      setTimeout(async () => {
+        const countResponse = await axios.get(`${API_URL}/api/certificados/notificaciones/contador`);
+        console.log('📊 Contador después de marcar como leída:', countResponse.data.count);
+      }, 1000);
+      
+    } catch (error) {
+      console.error('❌ Error en markAsRead:', error);
+      console.error('❌ Respuesta del error:', error.response?.data);
+    }
+  };
+
+  // SOLUCIÓN TEMPORAL: Marcar todas las no leídas como leídas
+  const markAllUnreadAsRead = async () => {
+    try {
+      console.log('🔄 Marcando todas las notificaciones no leídas...');
+      
+      // Obtener todas las notificaciones
+      const response = await axios.get(`${API_URL}/api/certificados/notificaciones?limit=100`);
+      const allNotifications = response.data;
+      
+      // Filtrar solo las no leídas
+      const unreadNotifications = allNotifications.filter(notif => !notif.read_status);
+      const unreadIds = unreadNotifications.map(notif => notif.id);
+      
+      console.log('📋 Notificaciones no leídas encontradas:', unreadIds);
+      
+      if (unreadIds.length > 0) {
+        await axios.put(`${API_URL}/api/certificados/notificaciones/marcar-leidas`, { ids: unreadIds });
+        console.log('✅ Todas las notificaciones marcadas como leídas');
+        
+        // Actualizar contador
+        setNotificationCount(0);
+      } else {
+        console.log('ℹ️ No hay notificaciones no leídas');
+      }
+      
+    } catch (error) {
+      console.error('❌ Error al marcar todas como leídas:', error);
+    }
+  };
+
   // Determinar el nombre de usuario y rol para mostrar
   const displayName = userData ? 
     (userData.firstname && userData.lastname ? 
@@ -364,6 +462,114 @@ const Navbar = ({ pageTitle }) => {
       return <SchoolIcon fontSize="small" />;
     } else {
       return <PersonIcon fontSize="small" />;
+    }
+  };
+
+  // Función mejorada para debug de endpoints
+  const debugEndpoints = async () => {
+    console.log('🔍 Verificando endpoints...');
+    
+    // Test 1: Verificar contador (sabemos que funciona)
+    try {
+      const countResponse = await axios.get(`${API_URL}/api/certificados/notificaciones/contador`);
+      console.log('✅ Contador funciona:', countResponse.data);
+    } catch (error) {
+      console.error('❌ Contador falló:', error);
+    }
+    
+    // Test 2: Verificar endpoint de notificaciones
+    try {
+      const notifResponse = await axios.get(`${API_URL}/api/certificados/notificaciones?limit=5`);
+      console.log('✅ Notificaciones funciona:', notifResponse.data);
+    } catch (error) {
+      console.error('❌ Notificaciones falló:', error);
+      console.error('   Status:', error.response?.status);
+      console.error('   Mensaje:', error.response?.data);
+    }
+    
+    // Test 3: Verificar endpoint de marcar como leídas
+    try {
+      const markResponse = await axios.put(`${API_URL}/api/certificados/notificaciones/marcar-leidas`, { ids: [999] });
+      console.log('✅ Marcar como leídas funciona:', markResponse.data);
+    } catch (error) {
+      console.error('❌ Marcar como leídas falló:', error);
+      console.error('   Status:', error.response?.status);
+      console.error('   Mensaje:', error.response?.data);
+    }
+    
+    // Test 4: Verificar URL directamente
+    console.log('🌐 URLs a verificar manualmente:');
+    console.log('   Contador:', `${API_URL}/api/certificados/notificaciones/contador`);
+    console.log('   Notificaciones:', `${API_URL}/api/certificados/notificaciones`);
+  };
+
+  // Función mejorada para fetchNotifications con más logs
+  const fetchNotificationsWithDebug = async () => {
+    try {
+      console.log('📋 Intentando cargar notificaciones...');
+      console.log('🌐 URL completa:', `${API_URL}/api/certificados/notificaciones?limit=10`);
+      
+      setIsLoadingNotifications(true);
+      
+      const response = await axios.get(`${API_URL}/api/certificados/notificaciones?limit=10`);
+      
+      console.log('✅ Respuesta recibida:', response);
+      console.log('📊 Status:', response.status);
+      console.log('📋 Datos:', response.data);
+      console.log('🔢 Cantidad de notificaciones:', response.data.length);
+      
+      setNotifications(response.data);
+      
+      // Sincronizar contador con las notificaciones cargadas
+      const unreadCount = response.data.filter(notif => !notif.read_status).length;
+      console.log('📊 Notificaciones no leídas calculadas:', unreadCount);
+      setNotificationCount(unreadCount);
+      
+      setIsLoadingNotifications(false);
+    } catch (error) {
+      console.error('❌ Error completo:', error);
+      console.error('❌ Response:', error.response);
+      console.error('❌ Request:', error.request);
+      console.error('❌ Config:', error.config);
+      setIsLoadingNotifications(false);
+    }
+  };
+
+  // Función mejorada para markAsRead con más logs
+  const markAsReadWithFullDebug = async (ids) => {
+    if (!ids || ids.length === 0) return;
+    
+    console.log('📝 Intentando marcar como leídas:', ids);
+    console.log('🌐 URL:', `${API_URL}/api/certificados/notificaciones/marcar-leidas`);
+    console.log('📤 Datos enviados:', { ids });
+    
+    try {
+      const response = await axios.put(`${API_URL}/api/certificados/notificaciones/marcar-leidas`, { ids });
+      
+      console.log('✅ Respuesta exitosa:', response.data);
+      console.log('📊 Status:', response.status);
+      
+      // Actualizar la UI
+      setNotifications(prev => 
+        prev.map(notif => 
+          ids.includes(notif.id) ? {...notif, read_status: true} : notif
+        )
+      );
+      
+      // Decrementar el contador localmente
+      setNotificationCount(prev => Math.max(0, prev - ids.length));
+      console.log('📊 Contador actualizado localmente');
+      
+    } catch (error) {
+      console.error('❌ Error al marcar como leídas:', error);
+      console.error('❌ Status:', error.response?.status);
+      console.error('❌ Data:', error.response?.data);
+      console.error('❌ URL solicitada:', error.config?.url);
+      console.error('❌ Método:', error.config?.method);
+      console.error('❌ Datos enviados:', error.config?.data);
+      
+      // En caso de error, refrescar el contador desde el servidor
+      fetchNotificationCount();
     }
   };
 
@@ -635,15 +841,31 @@ const Navbar = ({ pageTitle }) => {
               <Button 
                 fullWidth 
                 size="small"
-                onClick={() => {
+                onClick={async () => {
+                  console.log('📋 Click en "Ver todos los certificados"');
+                  
+                  // Marcar todas las notificaciones como leídas antes de navegar
+                  try {
+                    await markAllAsRead();
+                    console.log('✅ Todas las notificaciones marcadas como leídas');
+                  } catch (error) {
+                    console.error('❌ Error al marcar todas como leídas:', error);
+                  }
+                  
+                  // Cerrar el menú de notificaciones
                   handleNotificationClose();
+                  
                   // Verificar si estamos en la página de certificados
                   const onCertificatesPage = location.pathname === '/certificados/consultar';
-                  if (onCertificatesPage) {
-                    window.location.reload();
-                  } else {
-                    navigate('/certificados/consultar');
-                  }
+                  
+                  // Esperar un poco para que se complete la actualización
+                  setTimeout(() => {
+                    if (onCertificatesPage) {
+                      window.location.reload();
+                    } else {
+                      navigate('/certificados/consultar');
+                    }
+                  }, 100);
                 }}
                 sx={{ 
                   textTransform: 'none', 

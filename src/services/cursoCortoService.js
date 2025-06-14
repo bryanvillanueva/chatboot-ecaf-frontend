@@ -321,11 +321,11 @@ const createDiplomaTemplate = async (data) => {
       
 // TEXTO PRINCIPAL DEL CERTIFICADO
 {
-  text: `Asistió y aprobó el ${data.diploma.tipo_diploma || 'diplomado'} de:`,
-  style: 'mainTextBold',
-  alignment: 'center',
-  margin: [0, 0, 0, 1]
-},
+    text: `Asistió y aprobó el ${data.diploma.tipo_diploma || 'diplomado'} de:`,
+    style: 'mainTextBold',
+    alignment: 'center',
+    margin: [0, 0, 0, 1]
+  },
       
       // NOMBRE DEL PROGRAMA/DIPLOMADO
       {
@@ -432,20 +432,11 @@ const createDiplomaTemplate = async (data) => {
                 text: `${ECAF_INFO.ciudad}, ${formatearFechaGrado(data.diploma.fecha_grado)}`,
                 style: 'footerInfoBold',
                 alignment: 'center',
-                margin: [0, 0, 180, 0]
+                margin: [0, 0, 40, 0]
               },
       
               // ► «Libro …  Acta …» JUNTOS
-              {
-                width: 'auto',
-                text: [
-                  { text: `Libro No. ${data.diploma.libro || '___'}`, style: 'footerInfoBold' },
-                  { text: '   ' },   // separación con espacios finos
-                  { text: `Acta No. ${data.diploma.acta || '___'}`,  style: 'footerInfoBold' }
-                ],
-                alignment: 'center',
-                margin: [0, 0, 50, 0]
-              }
+             
             ],
             columnGap: 8          // separa ciudad-fecha del bloque Libro-Acta
           },

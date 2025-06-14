@@ -321,11 +321,11 @@ const createDiplomaTemplate = async (data) => {
       
 // TEXTO PRINCIPAL DEL CERTIFICADO
 {
-  text: `Asistió y aprobó el ${data.diploma.tipo_diploma || 'diplomado'} de:`,
-  style: 'mainTextBold',
-  alignment: 'center',
-  margin: [0, 0, 0, 1]
-},
+    text: `Asistió y aprobó el ${data.diploma.tipo_diploma || 'diplomado'} de:`,
+    style: 'mainTextBold',
+    alignment: 'center',
+    margin: [0, 0, 0, 1]
+  },
       
       // NOMBRE DEL PROGRAMA/DIPLOMADO
       {
