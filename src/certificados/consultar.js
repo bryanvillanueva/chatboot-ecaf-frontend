@@ -47,6 +47,8 @@ import Navbar from '../components/Navbar';
 import certificateService from '../services/certificateService';
 import certificateServiceEstudio from '../services/certificateServiceEstudio';
 import diplomaService from '../services/diplomaService';
+import duplicadoService from '../services/duplicadoService';
+import cursoCortoService from '../services/cursoCortoService';
 
 const ConsultarCertificados = ({ pageTitle }) => {
   // Estados
@@ -232,25 +234,39 @@ const formatoPesosColombiano = (valor) => {
   };
 
 
-  // Obtener el servicio adecuado según el tipo de certificado
   const getServiceByTipo = (tipo) => {
     if (!tipo) return certificateService; // Default
     
     const tipoLower = tipo.toLowerCase();
     
-    // Detectar diplomas
+    // Duplicados específicos
+    if (tipoLower.includes('duplicado')) {
+      if (tipoLower.includes('curso corto') || tipoLower.includes('certificado')) {
+        return cursoCortoService;
+      }
+      if (tipoLower.includes('diploma')) {
+        return duplicadoService;
+      }
+      // Duplicado genérico
+      return duplicadoService;
+    }
+    
+    // Originales
+    if (tipoLower.includes('curso corto')) {
+      return cursoCortoService;
+    }
+    
     if (tipoLower.includes('diploma')) {
       return diplomaService;
     }
     
-    // Todos los posibles tipos de certificado de estudio
     if (tipoLower.includes('estudio')) {
       return certificateServiceEstudio;
     }
     
-    // Todos los demás van a certificateService (notas)
     return certificateService;
   };
+
   
   const handleDownloadCertificado = async (certificado) => {
     if (!certificado) return;
