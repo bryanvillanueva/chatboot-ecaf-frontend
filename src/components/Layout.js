@@ -10,6 +10,7 @@ import ExpandLess from '@mui/icons-material/ExpandLess';
 import ExpandMore from '@mui/icons-material/ExpandMore';
 import SchoolIcon from '@mui/icons-material/School';
 import MenuBookIcon from '@mui/icons-material/MenuBook';
+import CodeIcon from '@mui/icons-material/Code';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 
 const drawerWidth = 250;
@@ -22,7 +23,7 @@ const Layout = ({ children }) => {
     location.pathname.includes('/certificados/generar') || location.pathname.includes('/certificados/consultar')
   );
   const [cargaOpen, setCargaOpen] = useState(
-    location.pathname.includes('/carga/estudiantes') || location.pathname.includes('/carga/programas')
+    location.pathname.includes('/carga/estudiantes') || location.pathname.includes('/carga/programas') || location.pathname.includes('/carga/diplomas') || location.pathname.includes('/carga/entrenamiento')
   );
 
   // Cargar datos del usuario al montar el componente
@@ -489,17 +490,17 @@ const Layout = ({ children }) => {
                 sx={{
                   margin: '8px 16px',
                   borderRadius: '8px',
-                  backgroundColor: (location.pathname.includes('/carga/estudiantes') || location.pathname.includes('/carga/programas') || location.pathname === '/carga') 
+                  backgroundColor: (location.pathname.includes('/carga/estudiantes') || location.pathname.includes('/carga/programas') || location.pathname.includes('/carga/diplomas') || location.pathname.includes('/carga/entrenamiento') || location.pathname === '/carga') 
                     ? 'rgba(206, 10, 10, 0.9)' 
                     : 'transparent',
-                  color: (location.pathname.includes('/carga/estudiantes') || location.pathname.includes('/carga/programas') || location.pathname === '/carga') 
+                  color: (location.pathname.includes('/carga/estudiantes') || location.pathname.includes('/carga/programas') || location.pathname.includes('/carga/diplomas') || location.pathname.includes('/carga/entrenamiento') || location.pathname === '/carga') 
                     ? '#fff' 
                     : '#333',
-                  boxShadow: (location.pathname.includes('/carga/estudiantes') || location.pathname.includes('/carga/programas') || location.pathname === '/carga')
+                  boxShadow: (location.pathname.includes('/carga/estudiantes') || location.pathname.includes('/carga/programas') || location.pathname.includes('/carga/diplomas') || location.pathname.includes('/carga/entrenamiento') || location.pathname === '/carga')
                     ? '0 2px 4px rgba(206, 10, 10, 0.25)'
                     : 'none',
                   '&:hover': {
-                    backgroundColor: (location.pathname.includes('/carga/estudiantes') || location.pathname.includes('/carga/programas') || location.pathname === '/carga') 
+                    backgroundColor: (location.pathname.includes('/carga/estudiantes') || location.pathname.includes('/carga/programas') || location.pathname.includes('/carga/diplomas') || location.pathname.includes('/carga/entrenamiento') || location.pathname === '/carga') 
                       ? 'rgba(206, 10, 10, 0.9)' 
                       : 'rgba(206, 10, 10, 0.1)',
                   },
@@ -508,7 +509,7 @@ const Layout = ({ children }) => {
               >
                 <ListItemIcon>
                   <UploadFileIcon sx={{ 
-                    color: (location.pathname.includes('/carga/estudiantes') || location.pathname.includes('/carga/programas') || location.pathname === '/carga') 
+                    color: (location.pathname.includes('/carga/estudiantes') || location.pathname.includes('/carga/programas') || location.pathname.includes('/carga/diplomas') || location.pathname.includes('/carga/entrenamiento') || location.pathname === '/carga') 
                       ? '#fff' 
                       : '#CE0A0A',
                     transition: 'all 0.2s ease-in-out'
@@ -518,10 +519,10 @@ const Layout = ({ children }) => {
                   primary="Carga de Datos" 
                   primaryTypographyProps={{
                     sx: { 
-                      color: (location.pathname.includes('/carga/estudiantes') || location.pathname.includes('/carga/programas') || location.pathname === '/carga') 
+                      color: (location.pathname.includes('/carga/estudiantes') || location.pathname.includes('/carga/programas') || location.pathname.includes('/carga/diplomas') || location.pathname.includes('/carga/entrenamiento') || location.pathname === '/carga') 
                         ? '#fff' 
                         : '#333',
-                      fontWeight: (location.pathname.includes('/carga/estudiantes') || location.pathname.includes('/carga/programas') || location.pathname === '/carga') 
+                      fontWeight: (location.pathname.includes('/carga/estudiantes') || location.pathname.includes('/carga/programas') || location.pathname.includes('/carga/diplomas') || location.pathname.includes('/carga/entrenamiento') || location.pathname === '/carga') 
                         ? 500 
                         : 400,
                       transition: 'all 0.2s ease-in-out'
@@ -530,13 +531,13 @@ const Layout = ({ children }) => {
                 />
                 {cargaOpen ? 
                   <ExpandLess sx={{ 
-                    color: (location.pathname.includes('/carga/estudiantes') || location.pathname.includes('/carga/programas') || location.pathname === '/carga') 
+                    color: (location.pathname.includes('/carga/estudiantes') || location.pathname.includes('/carga/programas') || location.pathname.includes('/carga/diplomas') || location.pathname.includes('/carga/entrenamiento') || location.pathname === '/carga') 
                       ? '#fff' 
                       : '#555',
                     transition: 'all 0.2s ease-in-out'
                   }} /> : 
                   <ExpandMore sx={{ 
-                    color: (location.pathname.includes('/carga/estudiantes') || location.pathname.includes('/carga/programas') || location.pathname === '/carga') 
+                    color: (location.pathname.includes('/carga/estudiantes') || location.pathname.includes('/carga/programas') || location.pathname.includes('/carga/diplomas') || location.pathname.includes('/carga/entrenamiento') || location.pathname === '/carga') 
                       ? '#fff' 
                       : '#555',
                     transition: 'all 0.2s ease-in-out'
@@ -602,26 +603,50 @@ const Layout = ({ children }) => {
                       />
                     </ListItem>
                   </Box>
+                  
+                  {/* Diplomas */}
                   <Box sx={{ textDecoration: 'none' }} component={Link} to="/carga/diplomas">
-  <ListItem button disableRipple sx={getSubItemStyle(location.pathname === '/carga/diplomas')}>
-    <ListItemIcon>
-      <WorkspacePremiumIcon sx={{ 
-        color: location.pathname === '/carga/diplomas' ? '#fff' : '#CE0A0A',
-        fontSize: '1.2rem'
-      }} />
-    </ListItemIcon>
-    <ListItemText 
-      primary="Diplomas" 
-      primaryTypographyProps={{
-        sx: { 
-          color: location.pathname === '/carga/diplomas' ? '#fff' : '#555',
-          fontSize: '0.9rem',
-          fontWeight: location.pathname === '/carga/diplomas' ? 500 : 400
-        }
-      }}
-    />
-  </ListItem>
-</Box>
+                    <ListItem button disableRipple sx={getSubItemStyle(location.pathname === '/carga/diplomas')}>
+                      <ListItemIcon>
+                        <WorkspacePremiumIcon sx={{ 
+                          color: location.pathname === '/carga/diplomas' ? '#fff' : '#CE0A0A',
+                          fontSize: '1.2rem'
+                        }} />
+                      </ListItemIcon>
+                      <ListItemText 
+                        primary="Diplomas" 
+                        primaryTypographyProps={{
+                          sx: { 
+                            color: location.pathname === '/carga/diplomas' ? '#fff' : '#555',
+                            fontSize: '0.9rem',
+                            fontWeight: location.pathname === '/carga/diplomas' ? 500 : 400
+                          }
+                        }}
+                      />
+                    </ListItem>
+                  </Box>
+                  
+                  {/* Entrenamiento - Vector Store Manager */}
+                  <Box sx={{ textDecoration: 'none' }} component={Link} to="/carga/entrenamiento">
+                    <ListItem button disableRipple sx={getSubItemStyle(location.pathname === '/carga/entrenamiento')}>
+                      <ListItemIcon>
+                        <CodeIcon sx={{ 
+                          color: location.pathname === '/carga/entrenamiento' ? '#fff' : '#CE0A0A',
+                          fontSize: '1.2rem'
+                        }} />
+                      </ListItemIcon>
+                      <ListItemText 
+                        primary="Entrenamiento" 
+                        primaryTypographyProps={{
+                          sx: { 
+                            color: location.pathname === '/carga/entrenamiento' ? '#fff' : '#555',
+                            fontSize: '0.9rem',
+                            fontWeight: location.pathname === '/carga/entrenamiento' ? 500 : 400
+                          }
+                        }}
+                      />
+                    </ListItem>
+                  </Box>
                 </List>
               </Collapse>
             </>

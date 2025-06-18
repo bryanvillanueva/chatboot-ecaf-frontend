@@ -14,6 +14,7 @@ import DiplomasPage from './carga/diplomas';
 // Asegúrate de crear estos componentes en la carpeta "informacion"
 import InfoEstudiantes from './informacion/InfoEstudiantes';
 import InfoProgramas from './informacion/InfoProgramas';
+import VectorStoreManager from './pages/VectorStoreManager';
 
 import axios from 'axios';
 
@@ -164,6 +165,9 @@ const App = () => {
                   <Route path="/carga/estudiantes" element={<EstudiantesPage />} />
                   <Route path="/carga/programas" element={<ProgramasPage />} />
                   <Route path="/carga/diplomas" element={<DiplomasPage />} />
+                  <Route path="/carga/entrenamiento" element={<VectorStoreManager />} />
+                  {/* Mantener la ruta original como fallback */}
+                  <Route path="/vectors" element={<VectorStoreManager />} />
                 </Routes>
               </Layout>
             ) : (
