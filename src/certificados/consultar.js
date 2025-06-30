@@ -359,14 +359,17 @@ const formatoPesosColombiano = (valor) => {
     let url = '', label = '';
     
     if (tipoCertificado.includes('estudio')) {
-      url = 'https://ecafescuela.com/producto/certificado-de-estudio/';
+      url = 'https://ecafescuela.com/producto/certificado-estudio/';
       label = 'Pagar Certificado de Estudio';
     } else if (tipoCertificado.includes('notas')) {
       url = 'https://ecafescuela.com/producto/certificado-de-notas/';
       label = 'Pagar Certificado de Notas';
     } else if (tipoCertificado.includes('curso corto')) {
-      url = 'https://ecafescuela.com/producto/duplicado-certificado-curso-corto/';
-      label = 'Pagar Duplicado de Certificado';
+      url = 'https://ecafescuela.com/producto/certificado-de-curso-corto/';
+      label = 'Pagar Duplicado de Certificado curso corto';
+    } else if (tipoCertificado.includes('duplicado')) {
+      url = 'https://ecafescuela.com/producto/duplicado-de-diploma/';
+      label = 'Pagar Duplicado de Diploma';
     } else if (tipoCertificado.includes('diploma')) {
       url = 'https://ecafescuela.com/producto/diploma-de-grado/';
       label = 'Pagar Diploma de Grado';
