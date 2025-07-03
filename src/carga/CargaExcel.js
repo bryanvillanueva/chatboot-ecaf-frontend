@@ -198,53 +198,40 @@ const CargaExcel = ({ pageTitle }) => {
                   sx={{ 
                     p: 1, 
                     borderRadius: '50%', 
-                    bgcolor: `${currentTab.color}15`,
-                    color: currentTab.color 
+                    bgcolor: currentTab.color + '22',
+                    color: currentTab.color,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: 32
                   }}
                 >
                   {currentTab.icon}
                 </Box>
-                <Box flex={1}>
-                  <Typography variant="h6" fontWeight={600}>
-                    {currentTab.description}
-                  </Typography>
-                  <Stack direction="row" spacing={1} mt={1} flexWrap="wrap">
-                    {currentTab.fields.map((field, index) => (
-                      <Chip 
-                        key={index}
-                        label={field} 
-                        size="small" 
-                        variant="outlined"
-                        sx={{ 
-                          borderColor: currentTab.color + '40',
-                          color: currentTab.color,
-                          fontSize: '0.75rem'
-                        }}
-                      />
-                    ))}
-                  </Stack>
-                </Box>
                 <Box>
-                  <Tooltip title="Descargar plantilla Excel">
-                    <Button
-                      variant="outlined"
-                      startIcon={<FileDownloadIcon />}
-                      href={currentTab.templateUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      sx={{
-                        borderColor: currentTab.color,
-                        color: currentTab.color,
-                        '&:hover': {
-                          borderColor: currentTab.color,
-                          bgcolor: currentTab.color + '08'
-                        }
-                      }}
-                    >
-                      Plantilla
-                    </Button>
-                  </Tooltip>
+                  <Typography variant="h6" fontWeight={600} color={currentTab.color}>{currentTab.label}</Typography>
+                  <Typography variant="body2" color="text.secondary">{currentTab.description}</Typography>
                 </Box>
+                <Box flex={1} />
+                <Button
+                  variant="contained"
+                  color="primary"
+                  startIcon={<FileDownloadIcon />}
+                  href={`https://bryanglen.com/ecaf/Plantilla_${currentTab.label.replace(/ .*/, '')}.xlsx`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  sx={{
+                    bgcolor: '#CE0A0A',
+                    color: '#fff',
+                    fontWeight: 600,
+                    borderRadius: 2,
+                    boxShadow: '0 2px 8px rgba(206,10,10,0.08)',
+                    ml: 2,
+                    '&:hover': { bgcolor: '#b00909' }
+                  }}
+                >
+                  Descargar Plantilla
+                </Button>
               </Stack>
             </CardContent>
           </Card>

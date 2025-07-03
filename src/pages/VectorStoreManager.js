@@ -174,38 +174,53 @@ const VectorStoreManager = () => {
     <>
       <Navbar pageTitle="Entrenamiento del Bot" />
       <Box sx={{ mt: 8, p: 3, backgroundColor: '#f8f9fa', minHeight: '100vh' }}>
-        {/* Header Principal */}
-        <Fade in timeout={800}>
-          <Paper
-            elevation={0}
-            sx={{
-              p: 4,
-              mb: 3,
-              background: 'linear-gradient(135deg, #CE0A0A 0%, #e74c3c 100%)',
-              color: 'white',
-              borderRadius: 3,
-              position: 'relative',
-              overflow: 'hidden',
-              '&::before': {
-                content: '""',
-                position: 'absolute',
-                top: 0,
-                right: 0,
-                width: '200px',
-                height: '200px',
-                background: 'rgba(255,255,255,0.1)',
-                borderRadius: '50%',
-                transform: 'translate(50%, -50%)'
-              }
+        {/* Header moderno y centrado */}
+        <Box textAlign="center" mb={4}>
+          <Typography 
+            variant="h3" 
+            component="h1" 
+            fontWeight={700}
+            sx={{ 
+              background: 'linear-gradient(45deg, #CE0A0A 30%, #FF6B6B 90%)',
+              backgroundClip: 'text',
+              WebkitBackgroundClip: 'text',
+              color: 'transparent',
+              mb: 1
             }}
           >
-            <Typography variant="h3" sx={{ fontWeight: 'bold', mb: 2, position: 'relative', zIndex: 1 }}>
-              🧠 Entrenamiento del Bot
-            </Typography>
-            <Typography variant="h6" sx={{ opacity: 0.9, maxWidth: 600, position: 'relative', zIndex: 1 }}>
-              Gestiona los archivos que alimentan la inteligencia artificial del chatbot de ECAF
-            </Typography>
-          </Paper>
+            Entrenamiento del Bot
+          </Typography>
+          <Typography variant="h6" color="text.secondary" fontWeight={400}>
+            Gestiona los archivos que alimentan la inteligencia artificial del chatbot de ECAF
+          </Typography>
+        </Box>
+
+        {/* Card de sección con icono y descripción */}
+        <Fade in timeout={800}>
+          <Card elevation={0} sx={{ border: '1px solid', borderColor: 'divider', mb: 3, borderLeft: '4px solid #CE0A0A' }}>
+            <CardContent>
+              <Stack direction="row" spacing={2} alignItems="center" mb={1}>
+                <Box 
+                  sx={{ 
+                    p: 1, 
+                    borderRadius: '50%', 
+                    bgcolor: '#CE0A0A22',
+                    color: '#CE0A0A',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: 32
+                  }}
+                >
+                  <CloudUploadIcon sx={{ fontSize: 32 }} />
+                </Box>
+                <Box>
+                  <Typography variant="h6" fontWeight={600} color="#CE0A0A">Entrenamiento del Bot</Typography>
+                  <Typography variant="body2" color="text.secondary">Sube, gestiona y elimina archivos que alimentan la IA del chatbot institucional.</Typography>
+                </Box>
+              </Stack>
+            </CardContent>
+          </Card>
         </Fade>
 
         {/* Área de Carga de Archivos - Mejorada */}
@@ -493,55 +508,10 @@ const VectorStoreManager = () => {
                 labelDisplayedRows={({ from, to, count }) => 
                   `${from}-${to} de ${count !== -1 ? count : `más de ${to}`}`
                 }
-                sx={{ borderTop: '1px solid #dee2e6' }}
               />
             </Paper>
           </Fade>
         )}
-
-        {/* Dialog de confirmación de eliminación */}
-        <Dialog
-          open={deleteDialogOpen}
-          onClose={() => setDeleteDialogOpen(false)}
-          maxWidth="sm"
-          fullWidth
-          PaperProps={{ sx: { borderRadius: 3 } }}
-        >
-          <DialogTitle sx={{ color: '#CE0A0A', fontWeight: 'bold', pb: 1 }}>
-            Confirmar Eliminación
-          </DialogTitle>
-          <DialogContent>
-            <Typography variant="body1" sx={{ mb: 2 }}>
-              ¿Estás seguro de que quieres eliminar el archivo:
-            </Typography>
-            <Typography variant="h6" sx={{ fontWeight: 'bold', mb: 2, color: '#CE0A0A' }}>
-              "{fileToDelete?.filename || fileToDelete?.attributes?.filename || 'Archivo sin nombre'}"
-            </Typography>
-            <Alert severity="warning" sx={{ borderRadius: 2 }}>
-              Esta acción no se puede deshacer. El archivo será eliminado permanentemente 
-              del sistema de entrenamiento del bot.
-            </Alert>
-          </DialogContent>
-          <DialogActions sx={{ p: 3, pt: 1 }}>
-            <Button 
-              onClick={() => setDeleteDialogOpen(false)}
-              disabled={loading}
-              sx={{ px: 3 }}
-            >
-              Cancelar
-            </Button>
-            <Button 
-              onClick={() => handleDelete(fileToDelete?.id)}
-              color="error" 
-              variant="contained"
-              disabled={loading}
-              startIcon={loading ? <CircularProgress size={16} /> : <DeleteIcon />}
-              sx={{ px: 3 }}
-            >
-              {loading ? 'Eliminando...' : 'Eliminar'}
-            </Button>
-          </DialogActions>
-        </Dialog>
       </Box>
     </>
   );

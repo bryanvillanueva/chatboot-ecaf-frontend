@@ -188,6 +188,27 @@ ${response.resultados?.errores?.length > 0 ? '\n\n🔍 Errores detallados:\n' + 
     if (uploadStatus === 'initial') {
       return (
         <>
+          <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}>
+            <Button
+              variant="contained"
+              color="primary"
+              startIcon={<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24"><path fill="#fff" d="M5 20h14v-2H5v2zm7-18C6.48 2 2 6.48 2 12c0 5.52 4.48 10 10 10s10-4.48 10-10c0-5.52-4.48-10-10-10zm1 15h-2v-6H8l4-4 4 4h-3v6z"/></svg>}
+              href="https://bryanglen.com/ecaf/Plantilla_Diplomas.xlsx"
+              target="_blank"
+              rel="noopener noreferrer"
+              sx={{
+                bgcolor: '#CE0A0A',
+                color: '#fff',
+                fontWeight: 600,
+                borderRadius: 2,
+                boxShadow: '0 2px 8px rgba(206,10,10,0.08)',
+                '&:hover': { bgcolor: '#b00909' }
+              }}
+            >
+              Descargar Plantilla
+            </Button>
+          </Box>
+
           <Alert 
             severity="info" 
             variant="outlined" 
@@ -436,20 +457,6 @@ ${response.resultados?.errores?.length > 0 ? '\n\n🔍 Errores detallados:\n' + 
       
       {uploadStatus === 'initial' && (
         <Box sx={{ display: 'flex', gap: 2, mt: 3, justifyContent: 'center' }}>
-          <Button
-            variant="outlined"
-            size="medium"
-            onClick={handleDownloadTemplate}
-            disabled={downloadingTemplate}
-            startIcon={<FileDownloadIcon />}
-            sx={{
-              borderRadius: 2,
-              px: 3
-            }}
-          >
-            Descargar Plantilla
-          </Button>
-          
           <Button
             variant="contained"
             size="medium"

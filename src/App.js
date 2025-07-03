@@ -14,6 +14,7 @@ import DiplomasPage from './carga/diplomas';
 // Asegúrate de crear estos componentes en la carpeta "informacion"
 import InfoEstudiantes from './informacion/InfoEstudiantes';
 import InfoProgramas from './informacion/InfoProgramas';
+import InfoDiplomas from './informacion/InfoDiplomas';
 import VectorStoreManager from './pages/VectorStoreManager';
 
 import axios from 'axios';
@@ -160,6 +161,7 @@ const App = () => {
                   {/* Rutas para ver información */}
                   <Route path="/informacion/estudiantes" element={<InfoEstudiantes />} />
                   <Route path="/informacion/programas" element={<InfoProgramas />} />
+                  <Route path="/informacion/diplomas" element={<InfoDiplomas />} />
                   {/* Rutas para cargar datos */}
                   <Route path="/carga" element={<CargaExcel pageTitle="Carga de Información"/>} />
                   <Route path="/carga/estudiantes" element={<EstudiantesPage />} />
