@@ -474,6 +474,24 @@ const Layout = ({ children }) => {
             />
           </ListItem>
         </Box>
+
+        {/* Ver Diplomas */}
+        <Box sx={{ textDecoration: 'none' }} component={Link} to="/informacion/diplomas">
+          <ListItem button disableRipple sx={getSubItemStyle(location.pathname === '/informacion/diplomas')}>
+            <ListItemIcon>
+              <WorkspacePremiumIcon sx={{ color: location.pathname === '/informacion/diplomas' ? '#fff' : '#CE0A0A', fontSize: '1.2rem' }} />
+            </ListItemIcon>
+            <ListItemText 
+              primary="Ver Diplomas" 
+              primaryTypographyProps={{ 
+                sx: { 
+                  fontSize: '0.9rem',
+                  color: location.pathname === '/informacion/diplomas' ? '#fff' : '#555'
+                } 
+              }} 
+            />
+          </ListItem>
+        </Box>
       </List>
     </Collapse>
   </>

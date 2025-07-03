@@ -24,35 +24,29 @@ import {
   Accordion,
   AccordionSummary,
   AccordionDetails,
-  Divider
+  Divider,
+  Chip,
+  Avatar,
+  Stack
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import SchoolIcon from '@mui/icons-material/School';
 import Navbar from '../components/Navbar';
 
 const InfoEstudiantes = () => {
   const [estudiantes, setEstudiantes] = useState([]);
   const [loading, setLoading] = useState(true);
-  // Paginación
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(15);
-  // Snackbar para errores
-  const [snackbar, setSnackbar] = useState({
-    open: false,
-    message: '',
-    severity: 'error'
-  });
-  // Estados para el modal de detalles
+  const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'error' });
   const [openModal, setOpenModal] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [studentDetails, setStudentDetails] = useState([]);
   const [loadingDetails, setLoadingDetails] = useState(false);
-  // Estado para guardar los datos procesados y agrupados
   const [datosAgrupados, setDatosAgrupados] = useState({});
 
-  useEffect(() => {
-    fetchEstudiantes();
-  }, []);
+  useEffect(() => { fetchEstudiantes(); }, []);
 
   const fetchEstudiantes = async () => {
     try {
@@ -60,36 +54,23 @@ const InfoEstudiantes = () => {
       const res = await axios.get('https://webhook-ecaf-production.up.railway.app/api/estudiantes');
       setEstudiantes(res.data);
     } catch (err) {
-      console.error('❌ Error al obtener estudiantes:', err);
-      setSnackbar({
-        open: true,
-        message: 'Error al cargar estudiantes',
-        severity: 'error'
-      });
+      setSnackbar({ open: true, message: 'Error al cargar estudiantes', severity: 'error' });
     } finally {
       setLoading(false);
     }
   };
 
-  const handleChangePage = (event, newPage) => {
-    setPage(newPage);
-  };
-
+  const handleChangePage = (event, newPage) => setPage(newPage);
   const handleChangeRowsPerPage = (event) => {
     setRowsPerPage(parseInt(event.target.value, 10));
     setPage(0);
   };
+  const handleCloseSnackbar = () => setSnackbar({ ...snackbar, open: false });
 
-  const handleCloseSnackbar = () => {
-    setSnackbar({ ...snackbar, open: false });
-  };
-
-  // Funciones para el modal de detalles del estudiante
   const handleOpenModal = (student) => {
     setSelectedStudent(student);
     setOpenModal(true);
   };
-
   const handleCloseModal = () => {
     setOpenModal(false);
     setSelectedStudent(null);
@@ -97,31 +78,15 @@ const InfoEstudiantes = () => {
     setDatosAgrupados({});
   };
 
-  // Función para agrupar los datos por programa y módulo
   const procesarDatosEstudiante = (datos) => {
     const programas = {};
-    
     datos.forEach(item => {
       const programaKey = item.Nombre_programa;
       const moduloKey = item.Nombre_modulo || 'Sin módulo';
-      
-      // Si el programa no existe, lo inicializamos
-      if (!programas[programaKey]) {
-        programas[programaKey] = {};
-      }
-      
-      // Si el módulo no existe en el programa, lo inicializamos
-      if (!programas[programaKey][moduloKey]) {
-        programas[programaKey][moduloKey] = [];
-      }
-      
-      // Agregamos la asignatura al módulo correspondiente
-      programas[programaKey][moduloKey].push({
-        nombre: item.Nombre_asignatura,
-        nota: Number(item.Nota_Final) // Convertir a número aquí
-      });
+      if (!programas[programaKey]) programas[programaKey] = {};
+      if (!programas[programaKey][moduloKey]) programas[programaKey][moduloKey] = [];
+      programas[programaKey][moduloKey].push({ nombre: item.Nombre_asignatura, nota: Number(item.Nota_Final) });
     });
-    
     return programas;
   };
 
@@ -131,54 +96,48 @@ const InfoEstudiantes = () => {
       axios.get(`https://webhook-ecaf-production.up.railway.app/api/estudiantes/${selectedStudent.numero_documento}/asignaciones`)
         .then(res => {
           setStudentDetails(res.data);
-          // Procesamos y agrupamos los datos
-          const datosProc = procesarDatosEstudiante(res.data);
-          setDatosAgrupados(datosProc);
+          setDatosAgrupados(procesarDatosEstudiante(res.data));
           setLoadingDetails(false);
         })
-        .catch(err => {
-          console.error('❌ Error al obtener detalles del estudiante:', err);
+        .catch(() => {
           setLoadingDetails(false);
-          setSnackbar({
-            open: true,
-            message: 'Error al cargar detalles del estudiante',
-            severity: 'error'
-          });
+          setSnackbar({ open: true, message: 'Error al cargar detalles del estudiante', severity: 'error' });
         });
     }
   }, [selectedStudent, openModal]);
 
-  // Función para formatear fechas
   const formatDate = (dateString) => {
     if (!dateString) return '';
     const date = new Date(dateString);
     return date.toLocaleDateString('es-ES');
   };
 
-  // Función para obtener el color de la nota
-  const getNotaColor = (nota) => {
-    if (nota >= 4.5) return '#4CAF50'; // Verde
-    if (nota >= 3.5) return '#8BC34A'; // Verde claro
-    if (nota >= 3.0) return '#FFC107'; // Amarillo
-    return '#F44336'; // Rojo
+  // Modern helpers
+  const getGeneroColor = (genero) => {
+    if (!genero) return 'default';
+    if (genero.toLowerCase().startsWith('m')) return 'primary';
+    if (genero.toLowerCase().startsWith('f')) return 'secondary';
+    return 'info';
   };
 
   return (
-    <Box sx={{ bgcolor: '#fafafa', minHeight: '100vh', py: 3 }}>
-      {/* Navbar */}
+    <Box sx={{ bgcolor: '#f6f7fb', minHeight: '100vh', py: 3 }}>
       <Navbar pageTitle="Información de Estudiantes" />
       <Container maxWidth="xl">
-        <Paper
-          elevation={3}
-          sx={{
-            p: 4,
-            borderRadius: 2,
-            boxShadow: '0 4px 20px rgba(0,0,0,0.05)'
-          }}
-        >
-          <Typography variant="h5" sx={{ color: '#CE0A0A', fontWeight: 600, mb: 3 }}>
-            Información de Estudiantes
-          </Typography>
+        <Paper elevation={3} sx={{ p: { xs: 2, md: 4 }, borderRadius: 3, boxShadow: '0 4px 24px rgba(0,0,0,0.07)' }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
+            <Avatar sx={{ bgcolor: '#CE0A0A', width: 48, height: 48, mr: 2 }}>
+              <SchoolIcon sx={{ fontSize: 32, color: '#fff' }} />
+            </Avatar>
+            <Box>
+              <Typography variant="h5" sx={{ color: '#CE0A0A', fontWeight: 700 }}>
+                Información de Estudiantes
+              </Typography>
+              <Typography variant="body2" sx={{ color: 'text.secondary', mt: 0.5 }}>
+                Consulta los datos y asignaciones de los estudiantes
+              </Typography>
+            </Box>
+          </Box>
           {loading ? (
             <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
               <CircularProgress sx={{ color: '#CE0A0A' }} />
@@ -187,55 +146,72 @@ const InfoEstudiantes = () => {
             <Alert severity="info">No se encontraron estudiantes.</Alert>
           ) : (
             <>
-              <TableContainer>
-                <Table sx={{ minWidth: 1000 }}>
+              <TableContainer sx={{ borderRadius: 2, boxShadow: '0 2px 8px rgba(206,10,10,0.04)' }}>
+                <Table sx={{ minWidth: 1000 }} size="small">
                   <TableHead>
-                    <TableRow sx={{ backgroundColor: 'rgba(206, 10, 10, 0.05)' }}>
-                      <TableCell sx={{ fontWeight: 'bold' }}>ID</TableCell>
-                      <TableCell sx={{ fontWeight: 'bold' }}>Tipo Documento</TableCell>
-                      <TableCell sx={{ fontWeight: 'bold' }}>Número Documento</TableCell>
-                      <TableCell sx={{ fontWeight: 'bold' }}>Nombres</TableCell>
-                      <TableCell sx={{ fontWeight: 'bold' }}>Apellidos</TableCell>
-                      <TableCell sx={{ fontWeight: 'bold' }}>Fecha Nacimiento</TableCell>
-                      <TableCell sx={{ fontWeight: 'bold' }}>Género</TableCell>
-                      <TableCell sx={{ fontWeight: 'bold' }}>Email</TableCell>
-                      <TableCell sx={{ fontWeight: 'bold' }}>Teléfono</TableCell>
-                      <TableCell sx={{ fontWeight: 'bold' }}>Dirección</TableCell>
-                      <TableCell sx={{ fontWeight: 'bold' }}>Ciudad</TableCell>
-                      <TableCell sx={{ fontWeight: 'bold' }}>Acciones</TableCell>
+                    <TableRow sx={{ backgroundColor: 'rgba(206, 10, 10, 0.07)' }}>
+                      <TableCell sx={{ fontWeight: 'bold', fontSize: '1rem' }}>ID</TableCell>
+                      <TableCell sx={{ fontWeight: 'bold', fontSize: '1rem' }}>Tipo Documento</TableCell>
+                      <TableCell sx={{ fontWeight: 'bold', fontSize: '1rem' }}>Número Documento</TableCell>
+                      <TableCell sx={{ fontWeight: 'bold', fontSize: '1rem' }}>Nombres</TableCell>
+                      <TableCell sx={{ fontWeight: 'bold', fontSize: '1rem' }}>Apellidos</TableCell>
+                      <TableCell sx={{ fontWeight: 'bold', fontSize: '1rem' }}>Fecha Nacimiento</TableCell>
+                      <TableCell sx={{ fontWeight: 'bold', fontSize: '1rem' }}>Género</TableCell>
+                      <TableCell sx={{ fontWeight: 'bold', fontSize: '1rem' }}>Email</TableCell>
+                      <TableCell sx={{ fontWeight: 'bold', fontSize: '1rem' }}>Teléfono</TableCell>
+                      <TableCell sx={{ fontWeight: 'bold', fontSize: '1rem' }}>Dirección</TableCell>
+                      <TableCell sx={{ fontWeight: 'bold', fontSize: '1rem' }}>Ciudad</TableCell>
+                      <TableCell sx={{ fontWeight: 'bold', fontSize: '1rem' }} align="center">Acción</TableCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
-                    {estudiantes
-                      .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-                      .map((est) => (
-                        <TableRow key={est.id_estudiante} hover>
-                          <TableCell>{est.id_estudiante}</TableCell>
-                          <TableCell>{est.tipo_documento}</TableCell>
-                          <TableCell>{est.numero_documento}</TableCell>
-                          <TableCell>{est.nombres}</TableCell>
-                          <TableCell>{est.apellidos}</TableCell>
-                          <TableCell>{formatDate(est.fecha_nacimiento)}</TableCell>
-                          <TableCell>{est.genero}</TableCell>
-                          <TableCell>{est.email}</TableCell>
-                          <TableCell>{est.telefono}</TableCell>
-                          <TableCell>{est.direccion}</TableCell>
-                          <TableCell>{est.ciudad}</TableCell>
-                          <TableCell>
-                            <Button
-                              variant="contained"
-                              size="small"
-                              onClick={() => handleOpenModal(est)}
-                              sx={{
-                                bgcolor: '#CE0A0A',
-                                '&:hover': { bgcolor: '#b00909' }
-                              }}
-                            >
-                              Ver Detalles
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      ))}
+                    {estudiantes.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((est, idx) => (
+                      <TableRow
+                        key={est.id_estudiante}
+                        hover
+                        sx={{
+                          backgroundColor: idx % 2 === 0 ? '#fff' : 'rgba(206,10,10,0.025)',
+                          transition: 'background 0.2s',
+                          '&:hover': { backgroundColor: 'rgba(206,10,10,0.09)' }
+                        }}
+                      >
+                        <TableCell>{est.id_estudiante}</TableCell>
+                        <TableCell>{est.tipo_documento}</TableCell>
+                        <TableCell>{est.numero_documento}</TableCell>
+                        <TableCell sx={{ fontWeight: 500 }}>{est.nombres}</TableCell>
+                        <TableCell>{est.apellidos}</TableCell>
+                        <TableCell>{formatDate(est.fecha_nacimiento)}</TableCell>
+                        <TableCell>
+                          <Chip
+                            label={est.genero}
+                            color={getGeneroColor(est.genero)}
+                            size="small"
+                            sx={{ fontWeight: 600, fontSize: '0.85rem' }}
+                          />
+                        </TableCell>
+                        <TableCell>{est.email}</TableCell>
+                        <TableCell>{est.telefono}</TableCell>
+                        <TableCell>{est.direccion}</TableCell>
+                        <TableCell>{est.ciudad}</TableCell>
+                        <TableCell align="center">
+                          <Button
+                            variant="contained"
+                            size="small"
+                            onClick={() => handleOpenModal(est)}
+                            sx={{
+                              bgcolor: '#CE0A0A',
+                              color: '#fff',
+                              fontWeight: 600,
+                              borderRadius: 2,
+                              boxShadow: '0 2px 8px rgba(206,10,10,0.08)',
+                              '&:hover': { bgcolor: '#b00909' }
+                            }}
+                          >
+                            Ver Detalles
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
                   </TableBody>
                 </Table>
               </TableContainer>
@@ -249,6 +225,7 @@ const InfoEstudiantes = () => {
                 onRowsPerPageChange={handleChangeRowsPerPage}
                 labelRowsPerPage="Filas por página:"
                 labelDisplayedRows={({ from, to, count }) => `${from}-${to} de ${count}`}
+                sx={{ mt: 2 }}
               />
             </>
           )}
@@ -267,21 +244,46 @@ const InfoEstudiantes = () => {
         }
       />
       {/* Modal para ver detalles utilizando Accordion de Material UI */}
-      <Dialog
-        open={openModal}
-        onClose={handleCloseModal}
-        fullWidth
-        maxWidth="md"
-      >
-        <DialogTitle sx={{ bgcolor: 'rgba(206, 10, 10, 0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Typography variant="h6" sx={{ color: '#CE0A0A', fontWeight: 'bold' }}>
-            Detalles del Estudiante
-          </Typography>
-          <IconButton onClick={handleCloseModal} sx={{ color: '#CE0A0A' }}>
+      <Dialog open={openModal} onClose={handleCloseModal} fullWidth maxWidth="md" TransitionProps={{ appear: true }}>
+        <DialogTitle sx={{
+          bgcolor: 'rgba(206, 10, 10, 0.07)',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 2,
+          pb: 0
+        }}>
+          <Avatar sx={{ bgcolor: '#CE0A0A', width: 44, height: 44 }}>
+            <SchoolIcon sx={{ color: '#fff', fontSize: 28 }} />
+          </Avatar>
+          <Box>
+            <Typography variant="h6" sx={{ color: '#CE0A0A', fontWeight: 'bold', lineHeight: 1.2 }}>
+              {selectedStudent && `${selectedStudent.nombres} ${selectedStudent.apellidos}`}
+            </Typography>
+            <Stack direction="row" spacing={1} sx={{ mt: 0.5 }}>
+              {selectedStudent?.genero && (
+                <Chip
+                  label={selectedStudent.genero}
+                  color={getGeneroColor(selectedStudent.genero)}
+                  size="small"
+                  sx={{ fontWeight: 600, fontSize: '0.85rem' }}
+                />
+              )}
+              {selectedStudent?.tipo_documento && (
+                <Chip
+                  label={selectedStudent.tipo_documento}
+                  color="info"
+                  size="small"
+                  sx={{ fontWeight: 600, fontSize: '0.85rem' }}
+                />
+              )}
+            </Stack>
+          </Box>
+          <Box flex={1} />
+          <IconButton onClick={handleCloseModal} sx={{ color: '#CE0A0A', ml: 2 }}>
             <CloseIcon />
           </IconButton>
         </DialogTitle>
-        <DialogContent dividers>
+        <DialogContent dividers sx={{ bgcolor: '#f9f9fb', p: { xs: 2, md: 4 } }}>
           {loadingDetails ? (
             <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
               <CircularProgress sx={{ color: '#CE0A0A' }} />
@@ -293,8 +295,6 @@ const InfoEstudiantes = () => {
               <Typography variant="subtitle1" sx={{ mb: 2, fontWeight: 'bold', color: '#CE0A0A' }}>
                 Asignaciones para: {selectedStudent && `${selectedStudent.nombres} ${selectedStudent.apellidos}`}
               </Typography>
-              
-              {/* Cabecera para la sección de Programas */}
               <Box sx={{ mb: 2, mt: 1 }}>
                 <Typography variant="h6" sx={{ color: '#CE0A0A', fontWeight: 'bold' }}>
                   Programas
@@ -303,14 +303,12 @@ const InfoEstudiantes = () => {
                   Haz clic en un programa para ver sus módulos
                 </Typography>
               </Box>
-
-              {/* Programas (primer nivel) */}
               {Object.keys(datosAgrupados).map((programa, indexPrograma) => (
-                <Accordion key={`programa-${indexPrograma}`} sx={{ mb: 1 }}>
+                <Accordion key={`programa-${indexPrograma}`} sx={{ mb: 1, borderRadius: 2, boxShadow: '0 2px 8px rgba(206,10,10,0.04)' }}>
                   <AccordionSummary
                     expandIcon={<ExpandMoreIcon />}
-                    sx={{ 
-                      bgcolor: 'rgba(206, 10, 10, 0.05)', 
+                    sx={{
+                      bgcolor: 'rgba(206, 10, 10, 0.05)',
                       '&:hover': { bgcolor: 'rgba(206, 10, 10, 0.1)' },
                       '&.Mui-expanded': { bgcolor: 'rgba(206, 10, 10, 0.1)' }
                     }}
@@ -318,7 +316,6 @@ const InfoEstudiantes = () => {
                     <Typography sx={{ fontWeight: 'bold' }}>{programa}</Typography>
                   </AccordionSummary>
                   <AccordionDetails sx={{ p: 0, pt: 1 }}>
-                    {/* Cabecera para la sección de Módulos */}
                     <Box sx={{ p: 2, bgcolor: 'rgba(206, 10, 10, 0.02)' }}>
                       <Typography variant="subtitle1" sx={{ fontWeight: 'bold', color: '#CE0A0A' }}>
                         Módulos
@@ -327,19 +324,17 @@ const InfoEstudiantes = () => {
                         Haz clic en un módulo para ver sus asignaturas
                       </Typography>
                     </Box>
-                    
-                    {/* Módulos (segundo nivel) */}
                     {Object.keys(datosAgrupados[programa]).map((modulo, indexModulo) => (
-                      <Accordion 
-                        key={`modulo-${indexPrograma}-${indexModulo}`} 
+                      <Accordion
+                        key={`modulo-${indexPrograma}-${indexModulo}`}
                         disableGutters
-                        sx={{ boxShadow: 'none', '&:before': { display: 'none' } }}
+                        sx={{ boxShadow: 'none', '&:before': { display: 'none' }, borderRadius: 2 }}
                       >
                         <AccordionSummary
                           expandIcon={<ExpandMoreIcon />}
-                          sx={{ 
-                            pl: 3, 
-                            bgcolor: 'rgba(206, 10, 10, 0.02)', 
+                          sx={{
+                            pl: 3,
+                            bgcolor: 'rgba(206, 10, 10, 0.02)',
                             '&:hover': { bgcolor: 'rgba(206, 10, 10, 0.05)' },
                             '&.Mui-expanded': { bgcolor: 'rgba(206, 10, 10, 0.05)' }
                           }}
@@ -347,7 +342,6 @@ const InfoEstudiantes = () => {
                           <Typography sx={{ fontWeight: '500' }}>{modulo}</Typography>
                         </AccordionSummary>
                         <AccordionDetails sx={{ p: 0 }}>
-                          {/* Tabla de asignaturas y notas */}
                           <TableContainer>
                             <Table size="small">
                               <TableHead>
@@ -358,19 +352,26 @@ const InfoEstudiantes = () => {
                               </TableHead>
                               <TableBody>
                                 {datosAgrupados[programa][modulo].map((asignatura, indexAsignatura) => (
-                                  <TableRow key={`asignatura-${indexPrograma}-${indexModulo}-${indexAsignatura}`} hover>
+                                  <TableRow
+                                    key={`asignatura-${indexPrograma}-${indexModulo}-${indexAsignatura}`}
+                                    hover
+                                    sx={{
+                                      backgroundColor: indexAsignatura % 2 === 0 ? '#fff' : 'rgba(206,10,10,0.025)',
+                                      '&:last-child td': { borderBottom: 0 }
+                                    }}
+                                  >
                                     <TableCell sx={{ pl: 6 }}>{asignatura.nombre}</TableCell>
                                     <TableCell>
-                                      <Box 
-                                        sx={{ 
+                                      <Box
+                                        sx={{
                                           display: 'inline-block',
-                                          px: 2, 
-                                          py: 0.5, 
+                                          px: 2,
+                                          py: 0.5,
                                           borderRadius: 1,
                                           fontWeight: 'bold',
-                                          bgcolor: getNotaColor(asignatura.nota) + '10', // Agregar transparencia
-                                          color: getNotaColor(asignatura.nota),
-                                          border: `1px solid ${getNotaColor(asignatura.nota)}30`
+                                          bgcolor: asignatura.nota >= 4.5 ? '#4CAF5010' : asignatura.nota >= 3.5 ? '#8BC34A10' : asignatura.nota >= 3.0 ? '#FFC10710' : '#F4433610',
+                                          color: asignatura.nota >= 4.5 ? '#4CAF50' : asignatura.nota >= 3.5 ? '#8BC34A' : asignatura.nota >= 3.0 ? '#FFC107' : '#F44336',
+                                          border: `1px solid ${asignatura.nota >= 4.5 ? '#4CAF50' : asignatura.nota >= 3.5 ? '#8BC34A' : asignatura.nota >= 3.0 ? '#FFC107' : '#F44336'}30`
                                         }}
                                       >
                                         {asignatura.nota.toFixed(2)}
@@ -390,14 +391,8 @@ const InfoEstudiantes = () => {
             </>
           )}
         </DialogContent>
-        <DialogActions>
-          <Button 
-            onClick={handleCloseModal} 
-            sx={{ 
-              color: '#CE0A0A',
-              '&:hover': { bgcolor: 'rgba(206, 10, 10, 0.05)' }
-            }}
-          >
+        <DialogActions sx={{ bgcolor: '#f9f9fb', p: 2 }}>
+          <Button onClick={handleCloseModal} sx={{ color: '#CE0A0A', fontWeight: 600, borderRadius: 2, px: 3, py: 1 }}>
             Cerrar
           </Button>
         </DialogActions>

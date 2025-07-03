@@ -25,12 +25,18 @@ import {
   AccordionSummary,
   AccordionDetails,
   Divider,
-  Collapse
+  Collapse,
+  Chip,
+  Avatar
 } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import CloseIcon from '@mui/icons-material/Close';
 import KeyboardArrowUp from '@mui/icons-material/KeyboardArrowUp';
 import KeyboardArrowDown from '@mui/icons-material/KeyboardArrowDown';
+import MenuBookIcon from '@mui/icons-material/MenuBook';
+import SchoolIcon from '@mui/icons-material/School';
+import AssignmentIcon from '@mui/icons-material/Assignment';
+import Stack from '@mui/material/Stack';
 import Navbar from '../components/Navbar';
 
 const InfoProgramas = () => {
@@ -374,15 +380,33 @@ const InfoProgramas = () => {
     return '#F44336'; // Rojo
   };
 
+  // Helper para color de estado
+  const getEstadoColor = (estado) => {
+    if (!estado) return 'default';
+    if (estado.toLowerCase() === 'activo' || estado.toLowerCase() === 'habilitado') return 'success';
+    if (estado.toLowerCase() === 'inactivo' || estado.toLowerCase() === 'anulado') return 'error';
+    if (estado.toLowerCase() === 'varios') return 'warning';
+    return 'info';
+  };
+
   return (
-    <Box sx={{ bgcolor: '#fafafa', minHeight: '100vh', py: 3 }}>
-      {/* Navbar */}
+    <Box sx={{ bgcolor: '#f6f7fb', minHeight: '100vh', py: 3 }}>
       <Navbar pageTitle="Programas Académicos" />
       <Container maxWidth="xl">
-        <Paper sx={{ p: 4, borderRadius: 2, boxShadow: '0 4px 20px rgba(0,0,0,0.05)' }}>
-          <Typography variant="h5" sx={{ color: '#CE0A0A', fontWeight: 600, mb: 3 }}>
-            Programas Académicos
-          </Typography>
+        <Paper sx={{ p: { xs: 2, md: 4 }, borderRadius: 3, boxShadow: '0 4px 24px rgba(0,0,0,0.07)' }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
+            <Avatar sx={{ bgcolor: '#CE0A0A', width: 48, height: 48, mr: 2 }}>
+              <MenuBookIcon sx={{ fontSize: 32, color: '#fff' }} />
+            </Avatar>
+            <Box>
+              <Typography variant="h5" sx={{ color: '#CE0A0A', fontWeight: 700 }}>
+                Programas Académicos
+              </Typography>
+              <Typography variant="body2" sx={{ color: 'text.secondary', mt: 0.5 }}>
+                Haz clic en un programa para ver sus módulos y asignaturas
+              </Typography>
+            </Box>
+          </Box>
           {loading ? (
             <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
               <CircularProgress sx={{ color: '#CE0A0A' }} />
@@ -391,53 +415,52 @@ const InfoProgramas = () => {
             <Alert severity="info">No se encontraron programas.</Alert>
           ) : (
             <>
-              {/* Cabecera para la sección de Programas */}
-              <Box sx={{ mb: 2 }}>
-                <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-                  Haz clic en un programa para ver sus módulos y asignaturas
-                </Typography>
-              </Box>
-
-              {/* Lista de programas con acordeones */}
               {programasAgrupados
                 .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
                 .map((programa, index) => (
-                  <Accordion 
+                  <Accordion
                     key={`programa-${index}`}
                     expanded={expandedPrograms[programa.Nombre_programa] || false}
                     onChange={() => toggleExpandProgram(programa.Nombre_programa, programa.ids)}
-                    sx={{ mb: 1 }}
+                    sx={{ mb: 1, borderRadius: 2, boxShadow: '0 2px 8px rgba(206,10,10,0.04)' }}
                   >
                     <AccordionSummary
                       expandIcon={<ExpandMoreIcon />}
-                      sx={{ 
-                        bgcolor: 'rgba(206, 10, 10, 0.05)', 
+                      sx={{
+                        bgcolor: 'rgba(206, 10, 10, 0.05)',
                         '&:hover': { bgcolor: 'rgba(206, 10, 10, 0.1)' },
                         '&.Mui-expanded': { bgcolor: 'rgba(206, 10, 10, 0.1)' }
                       }}
                     >
                       <Box sx={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center' }}>
                         <Typography sx={{ fontWeight: 'bold', flex: 1 }}>{programa.Nombre_programa}</Typography>
-                        <Box sx={{ mr: 2, display: 'flex', alignItems: 'center' }}>
-                          <Button
-                            variant="contained"
-                            size="small"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleOpenProgramModal(programa);
-                            }}
-                            sx={{ 
-                              bgcolor: '#CE0A0A', 
-                              '&:hover': { bgcolor: '#b00909' },
-                              mr: 2
-                            }}
-                          >
-                            Ver Estudiantes
-                          </Button>
-                        </Box>
+                        <Chip
+                          label={programa.Estado}
+                          color={getEstadoColor(programa.Estado)}
+                          size="small"
+                          sx={{ fontWeight: 600, fontSize: '0.85rem', mr: 2 }}
+                        />
+                        <Button
+                          variant="contained"
+                          size="small"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleOpenProgramModal(programa);
+                          }}
+                          sx={{
+                            bgcolor: '#CE0A0A',
+                            color: '#fff',
+                            fontWeight: 600,
+                            borderRadius: 2,
+                            boxShadow: '0 2px 8px rgba(206,10,10,0.08)',
+                            '&:hover': { bgcolor: '#b00909' },
+                            mr: 2
+                          }}
+                        >
+                          Ver Estudiantes
+                        </Button>
                       </Box>
                     </AccordionSummary>
-                    
                     <AccordionDetails>
                       <Box sx={{ margin: 1, ml: 4 }}>
                         <Typography variant="subtitle1" sx={{ mb: 1, color: '#CE0A0A', fontWeight: 'bold' }}>
@@ -450,7 +473,7 @@ const InfoProgramas = () => {
                         ) : modulesByProgram[programa.Nombre_programa].length === 0 ? (
                           <Alert severity="info">No se encontraron módulos para este programa.</Alert>
                         ) : (
-                          <Table size="small">
+                          <Table size="small" sx={{ minWidth: 600 }}>
                             <TableHead>
                               <TableRow sx={{ backgroundColor: 'rgba(206, 10, 10, 0.05)' }}>
                                 <TableCell sx={{ fontWeight: 'bold' }} />
@@ -460,15 +483,30 @@ const InfoProgramas = () => {
                               </TableRow>
                             </TableHead>
                             <TableBody>
-                              {modulesByProgram[programa.Nombre_programa].map((mod) => [
-                                <TableRow key={`mod-${mod.Id_Modulo}`} hover>
+                              {modulesByProgram[programa.Nombre_programa].map((mod, idx) => [
+                                <TableRow
+                                  key={`mod-${mod.Id_Modulo}`}
+                                  hover
+                                  sx={{
+                                    backgroundColor: idx % 2 === 0 ? '#fff' : 'rgba(206,10,10,0.025)',
+                                    transition: 'background 0.2s',
+                                    '&:hover': { backgroundColor: 'rgba(206,10,10,0.09)' }
+                                  }}
+                                >
                                   <TableCell>
                                     <IconButton size="small" onClick={() => toggleExpandModule(mod.Id_Modulo)}>
                                       {expandedModules[mod.Id_Modulo] ? <KeyboardArrowUp /> : <KeyboardArrowDown />}
                                     </IconButton>
                                   </TableCell>
-                                  <TableCell>{mod.Nombre_modulo}</TableCell>
-                                  <TableCell>{mod.Estado_modulo || 'Activo'}</TableCell>
+                                  <TableCell sx={{ fontWeight: 500 }}>{mod.Nombre_modulo}</TableCell>
+                                  <TableCell>
+                                    <Chip
+                                      label={mod.Estado_modulo || 'Activo'}
+                                      color={getEstadoColor(mod.Estado_modulo)}
+                                      size="small"
+                                      sx={{ fontWeight: 600, fontSize: '0.85rem' }}
+                                    />
+                                  </TableCell>
                                   <TableCell>
                                     <Button
                                       variant="outlined"
