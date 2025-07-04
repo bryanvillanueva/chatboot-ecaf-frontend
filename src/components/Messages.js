@@ -425,6 +425,35 @@ const ImagePreview = ({ file, onRemove }) => {
   );
 };
 
+// Componente de previsualización de documento
+const DocumentPreview = ({ file, onRemove }) => {
+  const getFileIcon = () => {
+    if (!file) return <DescriptionIcon fontSize="large" color="primary" />;
+    const extension = file.name.toLowerCase().split('.').pop();
+    switch (extension) {
+      case 'pdf': return <PictureAsPdfIcon fontSize="large" color="error" />;
+      case 'doc':
+      case 'docx': return <ArticleIcon fontSize="large" color="primary" />;
+      case 'xls':
+      case 'xlsx': return <TableChartIcon fontSize="large" color="success" />;
+      case 'ppt':
+      case 'pptx': return <SlideshowIcon fontSize="large" color="warning" />;
+      default: return <InsertDriveFileIcon fontSize="large" color="action" />;
+    }
+  };
+  return (
+    <Zoom in={true} timeout={300}>
+      <Box sx={{ mt: 2, mb: 2, p: 2, display: 'flex', alignItems: 'center', borderRadius: '12px', boxShadow: '0 2px 4px rgba(0,0,0,0.2)', background: '#fff', position: 'relative', minWidth: 200 }}>
+        {getFileIcon()}
+        <Typography variant="body2" sx={{ ml: 2, maxWidth: 180, wordBreak: 'break-all' }}>{file.name}</Typography>
+        <IconButton size="small" sx={{ ml: 1, position: 'absolute', top: 4, right: 4, backgroundColor: 'rgba(255,255,255,0.8)', '&:hover': { backgroundColor: 'white', transform: 'scale(1.1)' }, boxShadow: '0 1px 3px rgba(0,0,0,0.2)', transition: 'transform 0.2s ease' }} onClick={onRemove}>
+          <DeleteIcon fontSize="small" color="error" />
+        </IconButton>
+      </Box>
+    </Zoom>
+  );
+};
+
 const Messages = ({ conversationId }) => {
   const [messages, setMessages] = useState([]);
   const [replyingTo, setReplyingTo] = useState(null);
@@ -451,6 +480,7 @@ const Messages = ({ conversationId }) => {
   const [messageGroups, setMessageGroups] = useState([]);
   const isSmallScreen = useMediaQuery('(max-width:600px)');
   const inputRef = useRef(null);
+  const [selectedDocument, setSelectedDocument] = useState(null);
   
   // Agrupar mensajes por tiempo y remitente
   useEffect(() => {
@@ -650,9 +680,8 @@ const Messages = ({ conversationId }) => {
   };
 
   const handleSendMessage = async () => {
-    if (inputMessage.trim() || selectedImage) {
+    if (inputMessage.trim() || selectedImage || selectedDocument) {
       setIsSending(true);
-      
       try {
         const clientPhone = messages.find(m => m.sender && m.sender !== 'Ecaf')?.sender;
         if (!clientPhone) {
@@ -660,7 +689,6 @@ const Messages = ({ conversationId }) => {
           setIsSending(false);
           return;
         }
-        
         if (selectedImage) {
           const formData = new FormData();
           formData.append('file', selectedImage);
@@ -668,45 +696,30 @@ const Messages = ({ conversationId }) => {
           formData.append('conversationId', conversationId);
           formData.append('caption', inputMessage);
           formData.append('sender', 'Ecaf');
-          
-          await axios.post(
-            'https://webhook-ecaf-production.up.railway.app/api/send-media',
-            formData,
-            { 
-              headers: { 
-                'Content-Type': 'multipart/form-data' 
-              } 
-            }
-          );
-          
+          await axios.post('https://webhook-ecaf-production.up.railway.app/api/send-media', formData, { headers: { 'Content-Type': 'multipart/form-data' } });
           setSelectedImage(null);
-          if (imageInputRef.current) {
-            imageInputRef.current.value = '';
-          }
-        } 
-        else if (inputMessage.trim()) {
-          const payload = {
-            to: clientPhone,
-            conversationId,
-            message: inputMessage,
-            sender: 'Ecaf'
-          };
-
-          await axios.post(
-            'https://webhook-ecaf-production.up.railway.app/send-manual-message',
-            payload
-          );
+          if (imageInputRef.current) imageInputRef.current.value = '';
+        } else if (selectedDocument) {
+          const formData = new FormData();
+          formData.append('file', selectedDocument);
+          formData.append('to', clientPhone);
+          formData.append('conversationId', conversationId);
+          formData.append('caption', inputMessage);
+          formData.append('sender', 'Ecaf');
+          await axios.post('https://webhook-ecaf-production.up.railway.app/api/send-media', formData, { headers: { 'Content-Type': 'multipart/form-data' } });
+          setSelectedDocument(null);
+          if (documentInputRef.current) documentInputRef.current.value = '';
+        } else if (inputMessage.trim()) {
+          const payload = { to: clientPhone, conversationId, message: inputMessage, sender: 'Ecaf' };
+          await axios.post('https://webhook-ecaf-production.up.railway.app/send-manual-message', payload);
         }
-
         const data = await fetchMessages(conversationId);
         const sortedMessages = data.sort((a, b) => new Date(b.sent_at) - new Date(a.sent_at));
         setMessages(sortedMessages);
         scrollToBottom();
-        
         setInputMessage('');
         setReplyingTo(null);
         setShowEmojiPicker(false);
-        
       } catch (error) {
         console.error('Error sending message:', error.response ? error.response.data : error.message);
         alert(`Error al enviar mensaje: ${error.response?.data?.error || 'Ha ocurrido un error'}`);
@@ -785,55 +798,10 @@ const Messages = ({ conversationId }) => {
     }
   };
 
-  const handleDocumentUpload = async (event) => {
+  const handleDocumentUpload = (event) => {
     const file = event.target.files[0];
     if (!file) return;
-
-    const clientPhone = messages.find(m => m.sender && m.sender !== 'Ecaf')?.sender;
-    if (!clientPhone) {
-      alert('No se encontró el número de teléfono del cliente');
-      return;
-    }
-
-    setIsSending(true);
-    
-    try {
-      const formData = new FormData();
-      formData.append('file', file);
-      formData.append('to', clientPhone);
-      formData.append('conversationId', conversationId);
-      formData.append('caption', '');
-      formData.append('sender', 'Ecaf');
-      
-      await axios.post(
-        'https://webhook-ecaf-production.up.railway.app/api/send-media',
-        formData,
-        { 
-          headers: { 
-            'Content-Type': 'multipart/form-data' 
-          } 
-        }
-      );
-
-      const data = await fetchMessages(conversationId);
-      const sortedMessages = data.sort((a, b) => new Date(b.sent_at) - new Date(a.sent_at));
-      setMessages(sortedMessages);
-      scrollToBottom();
-    } catch (error) {
-      console.error('Error sending document:', error);
-      let errorMessage = 'Error al enviar el documento';
-      
-      if (error.response) {
-        errorMessage = error.response.data.error || error.response.data.details || errorMessage;
-      }
-      
-      alert(`Error al enviar documento: ${errorMessage}`);
-    } finally {
-      setIsSending(false);
-      if (documentInputRef.current) {
-        documentInputRef.current.value = '';
-      }
-    }
+    setSelectedDocument(file);
   };
 
   // Renderizado del contenido del mensaje según su tipo (MODIFICADO)
@@ -1394,7 +1362,7 @@ const renderMessageContent = (msg) => {
                   sx={{ 
                     color: 'white',
                     bgcolor: ICON_COLOR,
-                    opacity: (inputMessage.trim() || selectedImage) ? 1 : 0.7,
+                    opacity: (inputMessage.trim() || selectedImage || selectedDocument) ? 1 : 0.7,
                     transition: 'all 0.2s ease',
                     '&:hover': {
                       bgcolor: '#b71c1c',
@@ -1474,6 +1442,11 @@ const renderMessageContent = (msg) => {
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* Mostrar la previsualización de documento si existe */}
+      {selectedDocument && (
+        <DocumentPreview file={selectedDocument} onRemove={() => setSelectedDocument(null)} />
+      )}
     </Box>
   );
 };

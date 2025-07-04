@@ -37,6 +37,7 @@ import SupervisorAccountIcon from '@mui/icons-material/SupervisorAccount';
 import MoreHorizIcon from '@mui/icons-material/MoreHoriz';
 import DoneAllIcon from '@mui/icons-material/DoneAll';
 import FiberNewIcon from '@mui/icons-material/FiberNew';
+import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import axios from 'axios';
 import io from 'socket.io-client';
 import { ToastContainer, toast } from 'react-toastify';
@@ -652,22 +653,38 @@ const Navbar = ({ pageTitle }) => {
 
         {/* Iconos y perfil */}
         <Box sx={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 1 }}>
-          {/* Tooltip para agenda */}
-          <Tooltip title="Agenda">
-            <IconButton 
-              sx={{ 
-                color: '#666', 
-                '&:hover': { 
+          {/* Icono de Chat */}
+          <Tooltip title="Chat">
+            <IconButton
+              sx={{
+                color: '#666',
+                '&:hover': {
                   color: '#CE0A0A',
                   backgroundColor: 'rgba(206, 10, 10, 0.08)'
                 },
                 transition: 'all 0.2s'
               }}
+              onClick={() => navigate('/chat')}
             >
-              <EventNoteIcon />
+              <ChatIcon />
             </IconButton>
           </Tooltip>
-          
+          {/* Icono de Upload para carga de datos de estudiantes */}
+          <Tooltip title="Carga de Estudiantes">
+            <IconButton
+              sx={{
+                color: '#666',
+                '&:hover': {
+                  color: '#CE0A0A',
+                  backgroundColor: 'rgba(206, 10, 10, 0.08)'
+                },
+                transition: 'all 0.2s'
+              }}
+              onClick={() => navigate('/carga/estudiantes')}
+            >
+              <CloudUploadIcon />
+            </IconButton>
+          </Tooltip>
           {/* Tooltip para notificaciones - SISTEMA ACTUALIZADO */}
           <Tooltip title="Notificaciones de certificados">
             <IconButton 
@@ -877,24 +894,6 @@ const Navbar = ({ pageTitle }) => {
               </Button>
             </Box>
           </Menu>
-          
-          {/* Tooltip para chat */}
-          <Tooltip title="Chat">
-            <IconButton 
-              sx={{ 
-                color: '#666', 
-                '&:hover': { 
-                  color: '#CE0A0A',
-                  backgroundColor: 'rgba(206, 10, 10, 0.08)'
-                },
-                transition: 'all 0.2s'
-              }}
-            >
-              <Badge badgeContent={5} color="primary" sx={{ '& .MuiBadge-badge': { bgcolor: '#CE0A0A' } }}>
-                <ChatIcon />
-              </Badge>
-            </IconButton>
-          </Tooltip>
           
           <Divider orientation="vertical" flexItem sx={{ mx: 1, my: 1 }} />
           

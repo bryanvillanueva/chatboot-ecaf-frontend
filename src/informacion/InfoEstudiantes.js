@@ -33,6 +33,10 @@ import CloseIcon from '@mui/icons-material/Close';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import SchoolIcon from '@mui/icons-material/School';
 import Navbar from '../components/Navbar';
+import TextField from '@mui/material/TextField';
+import MenuItem from '@mui/material/MenuItem';
+import InputAdornment from '@mui/material/InputAdornment';
+import SearchIcon from '@mui/icons-material/Search';
 
 const InfoEstudiantes = () => {
   const [estudiantes, setEstudiantes] = useState([]);
@@ -45,6 +49,11 @@ const InfoEstudiantes = () => {
   const [studentDetails, setStudentDetails] = useState([]);
   const [loadingDetails, setLoadingDetails] = useState(false);
   const [datosAgrupados, setDatosAgrupados] = useState({});
+  const [search, setSearch] = useState('');
+  const [filterTipoDoc, setFilterTipoDoc] = useState('');
+  const [filterGenero, setFilterGenero] = useState('');
+  const [filterCiudad, setFilterCiudad] = useState('');
+  const [filterEstado, setFilterEstado] = useState('');
 
   useEffect(() => { fetchEstudiantes(); }, []);
 
@@ -120,6 +129,35 @@ const InfoEstudiantes = () => {
     return 'info';
   };
 
+  // Obtener valores únicos para los selects
+  const uniqueTipoDoc = Array.from(new Set(estudiantes.map(e => e.tipo_documento).filter(Boolean)));
+  const uniqueGenero = Array.from(new Set(estudiantes.map(e => e.genero).filter(Boolean)));
+  const uniqueCiudad = Array.from(new Set(estudiantes.map(e => e.ciudad).filter(Boolean)));
+
+  // Filtrado y búsqueda combinados
+  const filteredEstudiantes = estudiantes.filter(e => {
+    // Filtros
+    if (filterTipoDoc && e.tipo_documento !== filterTipoDoc) return false;
+    if (filterGenero && e.genero !== filterGenero) return false;
+    if (filterCiudad && e.ciudad !== filterCiudad) return false;
+    // Buscador
+    if (search) {
+      const s = search.toLowerCase();
+      return (
+        (e.id_estudiante && String(e.id_estudiante).toLowerCase().includes(s)) ||
+        (e.tipo_documento && e.tipo_documento.toLowerCase().includes(s)) ||
+        (e.numero_documento && String(e.numero_documento).toLowerCase().includes(s)) ||
+        (e.nombres && e.nombres.toLowerCase().includes(s)) ||
+        (e.apellidos && e.apellidos.toLowerCase().includes(s)) ||
+        (e.email && e.email.toLowerCase().includes(s)) ||
+        (e.telefono && String(e.telefono).toLowerCase().includes(s)) ||
+        (e.direccion && e.direccion.toLowerCase().includes(s)) ||
+        (e.ciudad && e.ciudad.toLowerCase().includes(s))
+      );
+    }
+    return true;
+  });
+
   return (
     <Box sx={{ bgcolor: '#f6f7fb', minHeight: '100vh', py: 3 }}>
       <Navbar pageTitle="Información de Estudiantes" />
@@ -137,6 +175,62 @@ const InfoEstudiantes = () => {
                 Consulta los datos y asignaciones de los estudiantes
               </Typography>
             </Box>
+          </Box>
+          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, mb: 2 }}>
+            <TextField
+              label="Buscar"
+              variant="outlined"
+              size="small"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              sx={{ minWidth: 220 }}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <SearchIcon />
+                  </InputAdornment>
+                ),
+              }}
+            />
+            <TextField
+              select
+              label="Tipo Documento"
+              value={filterTipoDoc}
+              onChange={e => setFilterTipoDoc(e.target.value)}
+              size="small"
+              sx={{ minWidth: 180 }}
+            >
+              <MenuItem value="">Todos</MenuItem>
+              {uniqueTipoDoc.map(val => (
+                <MenuItem key={val} value={val}>{val}</MenuItem>
+              ))}
+            </TextField>
+            <TextField
+              select
+              label="Género"
+              value={filterGenero}
+              onChange={e => setFilterGenero(e.target.value)}
+              size="small"
+              sx={{ minWidth: 150 }}
+            >
+              <MenuItem value="">Todos</MenuItem>
+              {uniqueGenero.map(val => (
+                <MenuItem key={val} value={val}>{val}</MenuItem>
+              ))}
+            </TextField>
+            <TextField
+              select
+              label="Ciudad"
+              value={filterCiudad}
+              onChange={e => setFilterCiudad(e.target.value)}
+              size="small"
+              sx={{ minWidth: 180 }}
+            >
+              <MenuItem value="">Todas</MenuItem>
+              {uniqueCiudad.map(val => (
+                <MenuItem key={val} value={val}>{val}</MenuItem>
+              ))}
+            </TextField>
           </Box>
           {loading ? (
             <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
@@ -165,7 +259,7 @@ const InfoEstudiantes = () => {
                     </TableRow>
                   </TableHead>
                   <TableBody>
-                    {estudiantes.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((est, idx) => (
+                    {filteredEstudiantes.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((est, idx) => (
                       <TableRow
                         key={est.id_estudiante}
                         hover
@@ -216,9 +310,9 @@ const InfoEstudiantes = () => {
                 </Table>
               </TableContainer>
               <TablePagination
-                rowsPerPageOptions={[15, 30, 45]}
+                rowsPerPageOptions={[10, 15, 25, 50, 100]}
                 component="div"
-                count={estudiantes.length}
+                count={filteredEstudiantes.length}
                 rowsPerPage={rowsPerPage}
                 page={page}
                 onPageChange={handleChangePage}

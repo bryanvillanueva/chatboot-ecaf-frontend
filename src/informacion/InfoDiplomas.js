@@ -24,21 +24,30 @@ import {
   Chip,
   Avatar,
   Stack,
-  useTheme
+  useTheme,
+  TextField,
+  MenuItem,
+  InputAdornment
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import WorkspacePremiumIcon from '@mui/icons-material/WorkspacePremium';
 import Navbar from '../components/Navbar';
+import SearchIcon from '@mui/icons-material/Search';
 
 const InfoDiplomas = () => {
   const [diplomas, setDiplomas] = useState([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(0);
-  const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [rowsPerPage, setRowsPerPage] = useState(25);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'error' });
   const [selectedDiploma, setSelectedDiploma] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [modalLoading, setModalLoading] = useState(false);
+  const [search, setSearch] = useState('');
+  const [filterTipoDoc, setFilterTipoDoc] = useState('');
+  const [filterTipoDiploma, setFilterTipoDiploma] = useState('');
+  const [filterEstado, setFilterEstado] = useState('');
+  const [filterNombreTipoDiploma, setFilterNombreTipoDiploma] = useState('');
   const theme = useTheme();
 
   useEffect(() => {
@@ -98,6 +107,36 @@ const InfoDiplomas = () => {
     return 'info';
   };
 
+  // Obtener valores únicos para los selects
+  const uniqueTipoDoc = Array.from(new Set(diplomas.map(d => d.tipo_identificacion).filter(Boolean)));
+  const uniqueTipoDiploma = Array.from(new Set(diplomas.map(d => d.tipo_diploma).filter(Boolean)));
+  const uniqueEstado = Array.from(new Set(diplomas.map(d => d.estado).filter(Boolean)));
+  const uniqueNombreTipoDiploma = Array.from(new Set(diplomas.map(d => d.nombre_tipo_diploma).filter(Boolean)));
+
+  // Filtrado y búsqueda combinados
+  const filteredDiplomas = diplomas.filter(d => {
+    // Filtros
+    if (filterTipoDoc && d.tipo_identificacion !== filterTipoDoc) return false;
+    if (filterTipoDiploma && d.tipo_diploma !== filterTipoDiploma) return false;
+    if (filterEstado && d.estado !== filterEstado) return false;
+    if (filterNombreTipoDiploma && d.nombre_tipo_diploma !== filterNombreTipoDiploma) return false;
+    // Buscador
+    if (search) {
+      const s = search.toLowerCase();
+      return (
+        (d.referencia && d.referencia.toLowerCase().includes(s)) ||
+        (d.nombre && d.nombre.toLowerCase().includes(s)) ||
+        (d.apellido && d.apellido.toLowerCase().includes(s)) ||
+        (d.tipo_identificacion && d.tipo_identificacion.toLowerCase().includes(s)) ||
+        (d.numero_identificacion && String(d.numero_identificacion).toLowerCase().includes(s)) ||
+        (d.tipo_diploma && d.tipo_diploma.toLowerCase().includes(s)) ||
+        (d.nombre_tipo_diploma && d.nombre_tipo_diploma.toLowerCase().includes(s)) ||
+        (d.estado && d.estado.toLowerCase().includes(s))
+      );
+    }
+    return true;
+  });
+
   return (
     <Box sx={{ bgcolor: '#f6f7fb', minHeight: '100vh', py: 3 }}>
       <Navbar pageTitle="Diplomas" />
@@ -116,11 +155,80 @@ const InfoDiplomas = () => {
               </Typography>
             </Box>
           </Box>
+          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, mb: 2 }}>
+            <TextField
+              label="Buscar"
+              variant="outlined"
+              size="small"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              sx={{ minWidth: 220 }}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <SearchIcon />
+                  </InputAdornment>
+                ),
+              }}
+            />
+            <TextField
+              select
+              label="Tipo Documento"
+              value={filterTipoDoc}
+              onChange={e => setFilterTipoDoc(e.target.value)}
+              size="small"
+              sx={{ minWidth: 180 }}
+            >
+              <MenuItem value="">Todos</MenuItem>
+              {uniqueTipoDoc.map(val => (
+                <MenuItem key={val} value={val}>{val}</MenuItem>
+              ))}
+            </TextField>
+            <TextField
+              select
+              label="Tipo de Diploma"
+              value={filterTipoDiploma}
+              onChange={e => setFilterTipoDiploma(e.target.value)}
+              size="small"
+              sx={{ minWidth: 180 }}
+            >
+              <MenuItem value="">Todos</MenuItem>
+              {uniqueTipoDiploma.map(val => (
+                <MenuItem key={val} value={val}>{val}</MenuItem>
+              ))}
+            </TextField>
+            <TextField
+              select
+              label="Estado"
+              value={filterEstado}
+              onChange={e => setFilterEstado(e.target.value)}
+              size="small"
+              sx={{ minWidth: 150 }}
+            >
+              <MenuItem value="">Todos</MenuItem>
+              {uniqueEstado.map(val => (
+                <MenuItem key={val} value={val}>{val}</MenuItem>
+              ))}
+            </TextField>
+            <TextField
+              select
+              label="Nombre Tipo Diploma"
+              value={filterNombreTipoDiploma}
+              onChange={e => setFilterNombreTipoDiploma(e.target.value)}
+              size="small"
+              sx={{ minWidth: 200 }}
+            >
+              <MenuItem value="">Todos</MenuItem>
+              {uniqueNombreTipoDiploma.map(val => (
+                <MenuItem key={val} value={val}>{val}</MenuItem>
+              ))}
+            </TextField>
+          </Box>
           {loading ? (
             <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
               <CircularProgress sx={{ color: '#CE0A0A' }} />
             </Box>
-          ) : diplomas.length === 0 ? (
+          ) : filteredDiplomas.length === 0 ? (
             <Alert severity="info">No se encontraron diplomas.</Alert>
           ) : (
             <>
@@ -140,7 +248,7 @@ const InfoDiplomas = () => {
                     </TableRow>
                   </TableHead>
                   <TableBody>
-                    {diplomas.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((diploma, idx) => (
+                    {filteredDiplomas.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((diploma, idx) => (
                       <TableRow
                         key={diploma.id}
                         hover
@@ -197,9 +305,9 @@ const InfoDiplomas = () => {
                 </Table>
               </TableContainer>
               <TablePagination
-                rowsPerPageOptions={[5, 10, 20]}
+                rowsPerPageOptions={[10, 15, 25, 50, 100]}
                 component="div"
-                count={diplomas.length}
+                count={filteredDiplomas.length}
                 rowsPerPage={rowsPerPage}
                 page={page}
                 onPageChange={handleChangePage}
