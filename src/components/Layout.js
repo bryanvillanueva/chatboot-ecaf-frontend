@@ -12,6 +12,7 @@ import SchoolIcon from '@mui/icons-material/School';
 import MenuBookIcon from '@mui/icons-material/MenuBook';
 import CodeIcon from '@mui/icons-material/Code';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { ReactComponent as SharkLogo } from '../assets/logo.svg';
 
 const drawerWidth = 250;
 
@@ -184,7 +185,11 @@ const Layout = ({ children }) => {
             color: '#333',
             overflowX: 'hidden', // Prevenir overflow horizontal en el drawer
             boxShadow: '0 0 10px rgba(0,0,0,0.1)',
-            borderRight: 'none'
+            borderRight: 'none',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'space-between',
+            minHeight: '100vh'
           },
         }}
       >
@@ -670,6 +675,15 @@ const Layout = ({ children }) => {
             </>
           )}
         </List>
+        {/* Footer Made with Love */}
+        <Box sx={{ p: 2, display: 'flex', flexDirection: 'column', alignItems: 'center', mt: 2, mb: 1 }}>
+          <Typography variant="caption" sx={{ color: 'text.secondary', fontSize: '1rem', display: 'flex', alignItems: 'center' }}>
+            Hecho con <span style={{ color: '#e25555', margin: '0 4px' }}>❤️</span> por
+          </Typography>
+          <Box component="a" href="https://sharkagency.co/" target="_blank" sx={{ display: 'flex', alignItems: 'center', mt: 1 }}>
+            <SharkLogo style={{ height: 30 }} />
+          </Box>
+        </Box>
       </Drawer>
 
       {/* Contenido Principal */}

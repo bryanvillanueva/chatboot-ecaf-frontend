@@ -35,6 +35,7 @@ import WarningIcon from '@mui/icons-material/Warning';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import FileUploadIcon from '@mui/icons-material/FileUpload';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import ErrorIcon from '@mui/icons-material/Error';
 import Navbar from '../components/Navbar';
 
 const BASE_URL = 'https://webhook-ecaf-production.up.railway.app';
@@ -52,6 +53,7 @@ const VectorStoreManager = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [fileToDelete, setFileToDelete] = useState(null);
   const [dragActive, setDragActive] = useState(false);
+  const [uploadSuccessOpen, setUploadSuccessOpen] = useState(false);
 
   const fetchFiles = async () => {
     setLoading(true);
@@ -131,7 +133,6 @@ const VectorStoreManager = () => {
     setUploading(true);
     setError('');
     try {
-      // Envío multipart/form-data al POST /vectors/files
       const formData = new FormData();
       formData.append('file', selectedFile);
       await axios.post(
@@ -143,6 +144,7 @@ const VectorStoreManager = () => {
       );
       setSelectedFile(null);
       await fetchFiles();
+      setUploadSuccessOpen(true);
     } catch (err) {
       console.error('Error subiendo archivo:', err);
       setError('No se pudo subir el archivo.');
@@ -170,6 +172,16 @@ const VectorStoreManager = () => {
     fetchFiles();
   }, []);
 
+  // Función para obtener color de estado
+  const getStatusColor = (status) => {
+    if (!status) return 'default';
+    const s = status.toLowerCase();
+    if (s === 'in_progress' || s === 'processing' || s === 'pending') return 'warning';
+    if (s === 'completed' || s === 'ready') return 'success';
+    if (s === 'failed' || s === 'error') return 'error';
+    return 'default';
+  };
+
   return (
     <>
       <Navbar pageTitle="Entrenamiento del Bot" />
@@ -180,7 +192,7 @@ const VectorStoreManager = () => {
             variant="h3" 
             component="h1" 
             fontWeight={700}
-            sx={{ 
+            sx={{
               background: 'linear-gradient(45deg, #CE0A0A 30%, #FF6B6B 90%)',
               backgroundClip: 'text',
               WebkitBackgroundClip: 'text',
@@ -189,10 +201,10 @@ const VectorStoreManager = () => {
             }}
           >
             Entrenamiento del Bot
-          </Typography>
+            </Typography>
           <Typography variant="h6" color="text.secondary" fontWeight={400}>
-            Gestiona los archivos que alimentan la inteligencia artificial del chatbot de ECAF
-          </Typography>
+              Gestiona los archivos que alimentan la inteligencia artificial del chatbot de ECAF
+            </Typography>
         </Box>
 
         {/* Card de sección con icono y descripción */}
@@ -450,11 +462,16 @@ const VectorStoreManager = () => {
                         />
                       </TableCell>
                       <TableCell>
-                        <Chip 
-                          label={file.status} 
+                        <Chip
+                          label={file.status}
                           size="small"
-                          color={file.status === 'ready' ? 'success' : 'warning'}
-                          sx={{ fontWeight: 'bold' }}
+                          color={getStatusColor(file.status)}
+                          icon={
+                            getStatusColor(file.status) === 'success' ? <CheckCircleIcon sx={{ color: '#43a047' }} /> :
+                            getStatusColor(file.status) === 'warning' ? <WarningIcon sx={{ color: '#ff9800' }} /> :
+                            getStatusColor(file.status) === 'error' ? <ErrorIcon sx={{ color: '#e53935' }} /> : null
+                          }
+                          sx={{ fontWeight: 'bold', textTransform: 'capitalize', bgcolor: getStatusColor(file.status) === 'warning' ? '#fff3e0' : undefined }}
                         />
                       </TableCell>
                       <TableCell>
@@ -479,8 +496,8 @@ const VectorStoreManager = () => {
                           onClick={() => handleDeleteClick(file)}
                           disabled={loading}
                           title="Eliminar archivo"
-                          sx={{ 
-                            '&:hover': { 
+                          sx={{
+                            '&:hover': {
                               backgroundColor: 'rgba(244, 67, 54, 0.1)',
                               transform: 'scale(1.1)'
                             },
@@ -513,6 +530,73 @@ const VectorStoreManager = () => {
           </Fade>
         )}
       </Box>
+
+      {/* Dialog de confirmación de eliminación */}
+      <Dialog
+        open={deleteDialogOpen}
+        onClose={() => setDeleteDialogOpen(false)}
+        maxWidth="sm"
+        fullWidth
+        PaperProps={{ sx: { borderRadius: 3 } }}
+      >
+        <DialogTitle sx={{ color: '#CE0A0A', fontWeight: 'bold', pb: 1 }}>
+          Confirmar Eliminación
+        </DialogTitle>
+        <DialogContent>
+          <Typography variant="body1" sx={{ mb: 2 }}>
+            ¿Estás seguro de que quieres eliminar el archivo:
+          </Typography>
+          <Typography variant="h6" sx={{ fontWeight: 'bold', mb: 2, color: '#CE0A0A' }}>
+            "{fileToDelete?.filename || fileToDelete?.attributes?.filename || 'Archivo sin nombre'}"
+          </Typography>
+          <Alert severity="warning" sx={{ borderRadius: 2 }}>
+            Esta acción no se puede deshacer. El archivo será eliminado permanentemente
+            del sistema de entrenamiento del bot.
+          </Alert>
+        </DialogContent>
+        <DialogActions sx={{ p: 3, pt: 1 }}>
+          <Button
+            onClick={() => setDeleteDialogOpen(false)}
+            disabled={loading}
+            sx={{ px: 3 }}
+          >
+            Cancelar
+          </Button>
+          <Button
+            onClick={() => handleDelete(fileToDelete?.id)}
+            color="error"
+            variant="contained"
+            disabled={loading}
+            startIcon={loading ? <CircularProgress size={16} /> : <DeleteIcon />}
+            sx={{ px: 3 }}
+          >
+            {loading ? 'Eliminando...' : 'Eliminar'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Modal de éxito al subir archivo */}
+      <Dialog
+        open={uploadSuccessOpen}
+        onClose={() => setUploadSuccessOpen(false)}
+        maxWidth="xs"
+        fullWidth
+        PaperProps={{ sx: { borderRadius: 3 } }}
+      >
+        <DialogTitle sx={{ color: '#43a047', fontWeight: 'bold', pb: 1 }}>
+          Archivo subido correctamente
+        </DialogTitle>
+        <DialogContent>
+          <Typography variant="body1" sx={{ mb: 2 }}>
+            ¡El archivo fue cargado exitosamente al sistema de entrenamiento del bot!
+          </Typography>
+        </DialogContent>
+        <DialogActions sx={{ p: 2, pt: 1 }}>
+          <Button onClick={() => setUploadSuccessOpen(false)} autoFocus variant="contained" color="success">
+            Cerrar
+          </Button>
+        </DialogActions>
+      </Dialog>
     </>
   );
 };
