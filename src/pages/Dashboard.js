@@ -304,62 +304,23 @@ const Dashboard = ({ pageTitle }) => {
   const completados = certificadosPorEstado.find(item => item.estado_normalizado === 'completado')?.cantidad || 0;
   const fallidos = certificadosPorEstado.find(item => item.estado_normalizado === 'fallido')?.cantidad || 0;
   
-  // Información financiera (si existe en la respuesta del endpoint)
-  const gananciasRealizadas = certificadosData?.finanzas?.gananciasRealizadas || 0;
-  const gananciasEsperadas = certificadosData?.finanzas?.gananciasEsperadas || 0;
-  const gananciasPerdidas = certificadosData?.finanzas?.gananciasPerdidas || 0;
+  // Información financiera (usando los nuevos campos del backend)
+  const resumenFinanciero = certificadosData?.resumenFinanciero || {};
+  const gananciasRealizadas = resumenFinanciero.total_ingresos_realizados || 0;
+  const gananciasEsperadas = resumenFinanciero.total_ingresos_esperados || 0;
+  const gananciasPerdidas = resumenFinanciero.total_ingresos_perdidos || 0;
   const totalGanancias = gananciasRealizadas + gananciasEsperadas;
+  const certificadosCompletadosTotal = resumenFinanciero.certificados_completados || 0;
+  const ingresoPromedioPorCertificado = resumenFinanciero.valor_promedio_certificado || 0;
   
-  // Datos para gráficos financieros
-  const certificadosPorTipo = certificadosData?.certificadosPorTipo || [];
-  const certificadosPorTipoYEstado = certificadosData?.certificadosPorTipoYEstado || [];
-  
-  // Definir precios por tipo de certificado
-  const PRECIOS = {
-    'Certificado de notas': 10000,
-    'Certificado general': 20000,
-    'Certificado de asistencia': 12000
-  };
-  
-  // Preparar datos para el gráfico de ingresos realizados por tipo
-  const ingresosPorTipoRealizados = {};
-  
-  // Contador para certificados completados (para calcular el promedio)
-  let certificadosCompletadosTotal = 0;
-
-  // Usar la lista de certificados por tipo y estado para calcular solo los completados
-  if (certificadosPorTipoYEstado && certificadosPorTipoYEstado.length > 0) {
-    certificadosPorTipoYEstado.forEach(item => {
-      // Solo considerar los certificados completados
-      if (item.estado_normalizado === 'completado') {
-        const tipo = item.tipo_certificado;
-        const precio = PRECIOS[tipo] || 0;
-        const cantidad = item.cantidad || 0;
-        
-        // Acumular el total de certificados completados
-        certificadosCompletadosTotal += cantidad;
-        
-        // Sumar al total del tipo correspondiente
-        if (!ingresosPorTipoRealizados[tipo]) {
-          ingresosPorTipoRealizados[tipo] = 0;
-        }
-        ingresosPorTipoRealizados[tipo] += cantidad * precio;
-      }
-    });
-  }
-  
-  // Calcular el ingreso promedio por certificado completado
-  const ingresoPromedioPorCertificado = certificadosCompletadosTotal > 0 
-    ? gananciasRealizadas / certificadosCompletadosTotal 
-    : 0;
-    
-  // Datos para gráfico de ingresos realizados por tipo
+  // Ingresos por tipo (para el gráfico de barras)
+  const ingresosPorTipo = certificadosData?.ingresosPorTipo || [];
   const ingresosPorTipoData = {
-    labels: Object.keys(ingresosPorTipoRealizados),
+    labels: ingresosPorTipo.map(item => item.tipo_certificado),
     datasets: [
       {
         label: 'Ingresos realizados por tipo de certificado',
-        data: Object.values(ingresosPorTipoRealizados),
+        data: ingresosPorTipo.map(item => item.ingresos_realizados),
         backgroundColor: [
           'rgba(54, 162, 235, 0.7)',   // Azul
           'rgba(75, 192, 192, 0.7)',    // Turquesa
@@ -383,9 +344,6 @@ const Dashboard = ({ pageTitle }) => {
     : 0;
   
   // Datos para gráficos de certificados
-  const tipoLabels = certificadosPorTipo.map(item => item.tipo_certificado || 'Desconocido');
-  const tipoCounts = certificadosPorTipo.map(item => item.cantidad);
-  
   const estadoLabels = certificadosPorEstado.map(item => {
     if (item.estado_normalizado === 'pendiente') return 'Pendiente';
     if (item.estado_normalizado === 'en_proceso') return 'En Proceso';
@@ -427,7 +385,11 @@ const Dashboard = ({ pageTitle }) => {
     ],
   };
   
-  // Datos para gráfico circular de certificados por tipo
+  // Corregir datos para gráfico circular de certificados por tipo
+  const certificadosPorTipo = certificadosData?.certificadosPorTipo || [];
+  const tipoLabels = certificadosPorTipo.map(item => item.tipo_certificado || 'Desconocido');
+  const tipoCounts = certificadosPorTipo.map(item => item.cantidad);
+
   const pieDataTipo = {
     labels: tipoLabels,
     datasets: [
@@ -996,6 +958,9 @@ const Dashboard = ({ pageTitle }) => {
                                   </Typography>
                                   <Typography variant="body2" color="text.secondary">
                                     Ref: {cert.referencia}
+                                  </Typography>
+                                  <Typography variant="body2" color="text.secondary">
+                                    Valor: {formatCurrency(cert.valor)}
                                   </Typography>
                                 </Grid>
                                 <Grid item xs={6} sm={3}>
