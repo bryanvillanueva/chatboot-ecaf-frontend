@@ -33,9 +33,10 @@ import UploadFileIcon from '@mui/icons-material/UploadFile';
 import SearchIcon from '@mui/icons-material/Search';
 import WarningIcon from '@mui/icons-material/Warning';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
-import FileUploadIcon from '@mui/icons-material/FileUpload';
+import FileDownloadIcon from '@mui/icons-material/FileDownload';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import ErrorIcon from '@mui/icons-material/Error';
+import FileUploadIcon from '@mui/icons-material/FileUpload';
 import Navbar from '../components/Navbar';
 
 const BASE_URL = 'https://webhook-ecaf-production.up.railway.app';
@@ -187,7 +188,7 @@ const VectorStoreManager = () => {
       <Navbar pageTitle="Entrenamiento del Bot" />
       <Box sx={{ mt: 8, p: 3, backgroundColor: '#f8f9fa', minHeight: '100vh' }}>
         {/* Header moderno y centrado */}
-        <Box textAlign="center" mb={4}>
+        <Box textAlign="center" mb={4} position="relative">
           <Typography 
             variant="h3" 
             component="h1" 
@@ -201,10 +202,10 @@ const VectorStoreManager = () => {
             }}
           >
             Entrenamiento del Bot
-            </Typography>
+          </Typography>
           <Typography variant="h6" color="text.secondary" fontWeight={400}>
               Gestiona los archivos que alimentan la inteligencia artificial del chatbot de ECAF
-            </Typography>
+          </Typography>
         </Box>
 
         {/* Card de sección con icono y descripción */}
@@ -245,16 +246,39 @@ const VectorStoreManager = () => {
                 background: 'linear-gradient(45deg, #f8f9fa 0%, #e9ecef 100%)',
                 borderBottom: '1px solid #dee2e6'
               }}>
-                <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 2 }}>
-                  <CloudUploadIcon sx={{ color: '#CE0A0A', fontSize: 32 }} />
-                  <Box>
-                    <Typography variant="h5" sx={{ fontWeight: 'bold', color: '#333' }}>
-                      Subir Archivo de Entrenamiento
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      Arrastra y suelta tu archivo aquí o haz clic para seleccionar
-                    </Typography>
-                  </Box>
+                <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 2 }}>
+                  <Stack direction="row" alignItems="center" spacing={2}>
+                    <CloudUploadIcon sx={{ color: '#CE0A0A', fontSize: 32 }} />
+                    <Box>
+                      <Typography variant="h5" sx={{ fontWeight: 'bold', color: '#333' }}>
+                        Subir Archivo de Entrenamiento
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        Arrastra y suelta tu archivo aquí o haz clic para seleccionar
+                      </Typography>
+                    </Box>
+                  </Stack>
+                  <Button
+                    variant="contained"
+                    size="small"
+                    startIcon={<FileDownloadIcon />}
+                    href="https://bryanglen.com/ecaf/Plantilla_Entrenamiento.pdf"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    sx={{
+                      bgcolor: '#CE0A0A',
+                      '&:hover': { bgcolor: '#b00909' },
+                      minWidth: 0,
+                      px: 2,
+                      py: 0.5,
+                      fontWeight: 500,
+                      fontSize: '0.95rem',
+                      borderRadius: 2,
+                      boxShadow: 1
+                    }}
+                  >
+                    Descargar Plantilla
+                  </Button>
                 </Stack>
               </Box>
 
@@ -308,7 +332,7 @@ const VectorStoreManager = () => {
                     </Typography>
                     <Button
                       variant="contained"
-                      startIcon={<UploadFileIcon />}
+                      startIcon={<FileUploadIcon />}
                       sx={{ 
                         bgcolor: '#CE0A0A', 
                         '&:hover': { bgcolor: '#b00909' },

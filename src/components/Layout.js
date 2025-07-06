@@ -193,23 +193,34 @@ const Layout = ({ children }) => {
           },
         }}
       >
-        <Toolbar 
-          sx={{ 
-            display: 'flex', 
-            justifyContent: 'center', 
-            alignItems: 'center', 
-            width: "100%", 
-            py: 2
-          }}
-        >
-          <Typography variant="h6" noWrap sx={{ fontSize: '30px', color: '#CE0A0A', fontWeight: 'bold' }}>
+        {/* Header con título ECAF - Espaciado reducido */}
+        <Box sx={{ 
+          display: 'flex', 
+          justifyContent: 'center', 
+          alignItems: 'center', 
+          py: 1.5, // Padding vertical reducido
+          px: 2,
+          minHeight: '56px' // Altura mínima específica
+        }}>
+          <Typography 
+            variant="h6" 
+            noWrap 
+            sx={{ 
+              fontSize: '30px', 
+              color: '#CE0A0A', 
+              fontWeight: 'bold',
+              lineHeight: 1 // Eliminar espacio extra del line-height
+            }}
+          >
             ECAF
           </Typography>
-        </Toolbar>
+        </Box>
         
-        <Divider sx={{ mx: 2, backgroundColor: 'rgba(0,0,0,0.08)' }} />
+        {/* Divider con margen reducido */}
+        <Divider sx={{ mx: 0, backgroundColor: 'rgba(0,0,0,0.08)', mb: 1 }} />
 
-        <List sx={{ mt: 2 }}>
+        {/* Lista de menú con padding superior reducido */}
+        <List sx={{ pt: 0, flexGrow: 1 }}>
           {/* Dashboard - Solo para administradores y profesores */}
           {(!isStudent() || isAdmin() || isTeacher()) && (
             <Box sx={{ textDecoration: 'none' }} component={Link} to="/">
@@ -675,12 +686,29 @@ const Layout = ({ children }) => {
             </>
           )}
         </List>
+        
         {/* Footer Made with Love */}
-        <Box sx={{ p: 2, display: 'flex', flexDirection: 'column', alignItems: 'center', mt: 2, mb: 1 }}>
-          <Typography variant="caption" sx={{ color: 'text.secondary', fontSize: '1rem', display: 'flex', alignItems: 'center' }}>
+        <Box sx={{ 
+          p: 2, 
+          display: 'flex', 
+          flexDirection: 'column', 
+          alignItems: 'center', 
+          mt: 'auto', // Empuja el footer hacia abajo
+          mb: 1 
+        }}>
+          <Typography variant="caption" sx={{ 
+            color: 'text.secondary', 
+            fontSize: '1rem', 
+            display: 'flex', 
+            alignItems: 'center' 
+          }}>
             Hecho con <span style={{ color: '#e25555', margin: '0 4px' }}>❤️</span> por
           </Typography>
-          <Box component="a" href="https://sharkagency.co/" target="_blank" sx={{ display: 'flex', alignItems: 'center', mt: 1 }}>
+          <Box component="a" href="https://sharkagency.co/" target="_blank" sx={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            mt: 1 
+          }}>
             <SharkLogo style={{ height: 30 }} />
           </Box>
         </Box>
