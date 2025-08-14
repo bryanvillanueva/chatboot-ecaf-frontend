@@ -89,6 +89,39 @@ const MessageImage = ({ mediaId, caption, onClick }) => {
     setImageLoaded(false);
   }, [mediaId]);
 
+
+  // Función para procesar saltos de línea en el caption
+const processMessageText = (text) => {
+  if (!text) return '';
+  
+  // Primero, convertir \\n escapados a \n reales
+  const textWithRealLineBreaks = text.replace(/\\n/g, '\n');
+  
+  const lines = textWithRealLineBreaks.split(/\n/);
+  
+  return lines.map((line, index) => {
+    if (line.trim() === '') {
+      return <Box key={index} sx={{ height: '6px' }} />;
+    }
+    
+    return (
+      <Typography 
+        key={index}
+        variant="body2" 
+        component="div"
+        sx={{ 
+          wordBreak: 'break-word',
+          lineHeight: 1.4,
+          mb: index < lines.length - 1 ? 0.3 : 0
+        }}
+      >
+        {line}
+      </Typography>
+    );
+  });
+};
+
+
   return (
     <Box sx={{ 
       maxWidth: '100%', 
@@ -159,24 +192,17 @@ const MessageImage = ({ mediaId, caption, onClick }) => {
           
           {/* Mostrar caption si existe */}
           {caption && caption.trim() && (
-            <Box sx={{ 
-              p: 1.5, 
-              backgroundColor: 'inherit', // Hereda el color de la burbuja del mensaje
-              borderRadius: '0 0 12px 12px',
-              borderTop: '1px solid rgba(255,255,255,0.1)'
-            }}>
-              <Typography 
-                variant="body2" 
-                sx={{ 
-                  wordBreak: 'break-word',
-                  lineHeight: 1.4,
-                  fontSize: '0.875rem'
-                }}
-              >
-                {caption}
-              </Typography>
-            </Box>
-          )}
+  <Box sx={{ 
+    p: 1.5, 
+    backgroundColor: 'inherit',
+    borderRadius: '0 0 12px 12px',
+    borderTop: '1px solid rgba(255,255,255,0.1)'
+  }}>
+    <Box sx={{ fontSize: '0.875rem' }}>
+      {processMessageText(caption)}
+    </Box>
+  </Box>
+)}
         </>
       )}
     </Box>
@@ -804,7 +830,65 @@ const Messages = ({ conversationId }) => {
     setSelectedDocument(file);
   };
 
-  // Renderizado del contenido del mensaje según su tipo (MODIFICADO)
+
+// Función para procesar saltos de línea en los mensajes de texto
+const processMessageText = (text) => {
+  if (!text) return '';
+  
+  
+  // Primero, convertir \\n escapados a \n reales
+  const textWithRealLineBreaks = text.replace(/\\n/g, '\n');
+  
+  
+  // Dividir el texto por saltos de línea
+  const lines = textWithRealLineBreaks.split(/\n/);
+  
+  
+  return lines.map((line, index) => {
+    // Si la línea está vacía, representa un salto de línea doble
+    if (line.trim() === '') {
+      return <Box key={index} sx={{ height: '8px' }} />; // Espacio extra para \n\n
+    }
+    
+    return (
+      <Typography 
+        key={index}
+        variant="body1" 
+        component="div"
+        sx={{ 
+          wordBreak: 'break-word',
+          lineHeight: 1.4,
+          mb: index < lines.length - 1 ? 0.5 : 0 // Espacio entre líneas
+        }}
+      >
+        {line}
+      </Typography>
+    );
+  });
+};
+
+// Función para limpiar citas del vector store (igual que en el backend)
+const stripCitations = (text) => {
+  if (!text) return text;
+
+  // 1) Quita cualquier bloque tipo 【...】 (incluye casos múltiples y adyacentes)
+  let cleaned = text.replace(/【[^】]*】/g, "");
+
+  // 2) Colapsa espacios horizontales repetidos, preservando \n/\r\n
+  //    [^\S\r\n] = whitespace NO visible que NO sea \r o \n (espacios, tabs)
+  cleaned = cleaned.replace(/[^\S\r\n]{2,}/g, " ");
+
+  // 3) Quita espacios o tabs justo antes de un salto de línea
+  cleaned = cleaned.replace(/[ \t]+(\r?\n)/g, "$1");
+
+  // 4) Trim general (no elimina \n internos)
+  cleaned = cleaned.trim();
+
+  return cleaned;
+};
+
+// Renderizado del contenido del mensaje según su tipo (MODIFICADO)
+// Renderizado del contenido del mensaje según su tipo (MODIFICADO)
 const renderMessageContent = (msg) => {
   switch (msg.message_type) {
     case 'audio':
@@ -817,7 +901,7 @@ const renderMessageContent = (msg) => {
       return (
         <MessageImage 
           mediaId={msg.media_id} 
-          caption={msg.message} // Pasamos el campo message como caption
+          caption={msg.message} // Caption no se procesa para evitar limpiar citas
           onClick={() => handleOpenImageModal(`https://webhook-ecaf-production.up.railway.app/api/download-image/${msg.media_id}`)}
         />
       );
@@ -825,11 +909,15 @@ const renderMessageContent = (msg) => {
       return (
         <MessageDocument 
           mediaId={msg.media_id} 
-          fileName={msg.message || "Documento Adjunto"} // También podríamos usar el message como nombre del archivo si lo prefieres
+          fileName={msg.message || "Documento Adjunto"}
         />
       );
     default:
-      return <Typography variant="body1">{msg.message}</Typography>;
+      return (
+        <Box>
+          {processMessageText(stripCitations(msg.message))}
+        </Box>
+      );
   }
 };
 
